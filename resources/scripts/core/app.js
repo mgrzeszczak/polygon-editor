@@ -19,7 +19,7 @@ var app = (function(){
 
     function drawLoop(){
         var ctx = app.content.canvas.getContext('2d');
-        ctx.fillStyle = '#000000';
+        ctx.fillStyle = app.config.background;
         ctx.fillRect(0,0,app.content.canvas.width,app.content.canvas.height);
         ctx.pixelArray = ctx.getImageData(0,0,app.content.canvas.width,app.content.canvas.height);
         objects.forEach(function(obj){
@@ -29,77 +29,78 @@ var app = (function(){
         requestAnimationFrame(drawLoop);
     }
 
-    CanvasRenderingContext2D.prototype.setPixel = function(pixel,color){
-        if (pixel.x<0 || pixel.x>=app.content.canvas.width || pixel.y<0 || pixel.y>=app.content.canvas.height) return;
-        this.pixelArray.data[pixel.x*4+pixel.y*4*app.content.canvas.width]=color.r;
-        this.pixelArray.data[pixel.x*4+pixel.y*4*app.content.canvas.width+1]=color.g;
-        this.pixelArray.data[pixel.x*4+pixel.y*4*app.content.canvas.width+2]=color.b;
-        this.pixelArray.data[pixel.x*4+pixel.y*4*app.content.canvas.width+3]=color.a;
-    };
-
     function pushVertex(vertex){
-        poly.addPoint(app.factory.createPointForPoly(vertex.x,vertex.y,poly));
+        poly.addVertex(app.factory.createVertex(vertex.x,vertex.y));
 
     }
     function finishPoly(){
-        poly.close();
+        if (!poly.close()) objects.splice(objects.indexOf(poly),1);
         poly = app.factory.createPolygon();
         objects.push(poly);
     }
 
+    function removePoly(poly){
+        objects.splice(objects.indexOf(poly),1);
+    }
+
     function enterEditMode(){
-
         objects.forEach(function(obj){
-
             obj.imgs = [];
 
-            obj.points.forEach(function(point){
-                var img = app.factory.createImage(app.content.editIcon,point.x-10,point.y-10,20,20);
+            obj.vertices.forEach(function(vertex){
+                var img = app.factory.createImage(app.config.editIcon,vertex.x-app.config.smallImageSize/2,
+                    vertex.y-app.config.smallImageSize/2,app.config.smallImageSize,app.config.smallImageSize);
                 obj.imgs.push(img);
                 img.onclick=function(){
-                    img.prompt([{text:"Remove vertex",value:1}],function(result){
+                    img.prompt('Edit vertex',[{text:"Remove",value:1}],function(result){
                         if (result == 1){
-                            obj.removeVertex(point);
+                            obj.removeVertex(vertex);
                         }
                     });
                 };
                 document.body.appendChild(img);
             });
 
-            obj.lines.forEach(function(line){
-                var center = {x:(line.to.x+line.from.x)/2,y:(line.to.y+line.from.y)/2};
-                var img = app.factory.createImage(app.content.editIcon,center.x-10,center.y-10,20,20);
+
+            obj.edges.forEach(function(edge){
+                var center = {x:(edge.to.x+edge.from.x)/2,y:(edge.to.y+edge.from.y)/2};
+                var img = app.factory.createImage(app.config.editIcon,center.x-app.config.smallImageSize/2,
+                    center.y-app.config.smallImageSize/2,app.config.smallImageSize,app.config.smallImageSize);
                 obj.imgs.push(img);
                 img.onclick=function(){
-                    img.prompt([
-                        {text:"Split edge",value:1},
-                        {text:"Add relation length 10",value:2}
+                    img.prompt('Edit edge',[
+                        {text:"Split",value:1},
+                        {text:"Set length",value:2},
+                        {text:"Set vertical",value:3},
+                        {text:"Set horizontal",value:4},
                     ],function(result){
-                        console.log(result);
                         if (result==1){
-                            obj.splitEdge(line,img.x,img.y);
-                        } else if (result == 2){
-                            line.relation = new app.relation(app.relations.LENGTH,200);
-                            console.log(line.relation);
+                            obj.splitEdge(edge,img.x,img.y);
+                        } else if (result==2){
+                            var n = prompt('Length:');
+                            if (isNaN(n) || n<0 || n>1000) return;
+                            edge.relation = new app.relation(app.relations.LENGTH,n);
+                        } else if (result==3){
+                            edge.relation = new app.relation(app.relations.VERTICAL);
+                        } else if (result==4){
+                            edge.relation = new app.relation(app.relations.HORIZONTAL);
                         }
                     });
                 };
                 document.body.appendChild(img);
             });
 
-            if (obj.points.length==0) return;
-            var firstPoint = obj.points[0];
+            if (obj.vertices.length==0) return;
+            var firstVertex = obj.vertices[0];
 
-            var img = app.factory.createImage(app.content.editIcon,firstPoint.x-50,firstPoint.y-50,30,30);
+            var img = app.factory.createImage(app.config.editIcon,firstVertex.x-2*app.config.mediumImageSize,
+                firstVertex.y-2*app.config.mediumImageSize,app.config.mediumImageSize,app.config.mediumImageSize);
             obj.imgs.push(img);
             img.onclick=function(){
-              img.prompt([{text:"Remove polygon",value:1}],function(result){
+              img.prompt('Edit polygon',[{text:"Remove",value:1}],function(result){
                   if (result == 1){
                       objects.splice(objects.indexOf(obj),1);
-                      obj.imgs.forEach(function(img){
-                         img.setAttribute("class","remove");
-                      });
-                      $(".remove").remove();
+                      obj.clearImgs();
                   }
               });
             };
@@ -109,19 +110,19 @@ var app = (function(){
 
     function enterMoveMode(){
         objects.forEach(function(obj){
-
-            obj.points.forEach(function(point){
-                var img = app.factory.createImage(app.content.moveIcon,point.x-10,point.y-10,20,20);
-                img.allowDrag([point]);
+            obj.vertices.forEach(function(vertex){
+                var img = app.factory.createImage(app.config.moveIcon,vertex.x-app.config.smallImageSize/2,
+                    vertex.y-app.config.smallImageSize/2,app.config.smallImageSize,app.config.smallImageSize);
+                img.allowDrag([vertex]);
                 document.body.appendChild(img);
             });
-            if (obj.points.length==0) return;
-            var firstPoint = obj.points[0];
+            if (obj.vertices.length==0) return;
+            var firstVertex = obj.vertices[0];
 
-            var img = app.factory.createImage(app.content.moveIcon,firstPoint.x-50,firstPoint.y-50,30,30);
-            img.allowDrag(obj.points);
+            var img = app.factory.createImage(app.config.moveIcon,firstVertex.x-2*app.config.mediumImageSize,
+                firstVertex.y-2*app.config.mediumImageSize,app.config.mediumImageSize,app.config.mediumImageSize);
+            img.allowDrag(obj.vertices);
             document.body.appendChild(img);
-
         });
     }
 
@@ -134,6 +135,7 @@ var app = (function(){
         initialize : initialize,
         pushVertex : pushVertex,
         finishPoly : finishPoly,
+        removePoly : removePoly,
 
         enterEditMode : enterEditMode,
         enterCreateMode : enterCreateMode,

@@ -4,12 +4,12 @@ app.factory = (function(){
         return new app.objects.polygon();
     }
 
-    function createPointForPoly(x,y,poly){
-        return new app.objects.point(x,y,poly);
+    function createVertex(x,y){
+        return new app.objects.vertex(x,y);
     }
 
-    function createLineForPoly(from,to,poly) {
-        return new app.objects.line(from, to, poly);
+    function createEdge(from,to) {
+        return new app.objects.edge(from, to);
     }
 
     function createImage(src,x,y,width,height){
@@ -27,8 +27,8 @@ app.factory = (function(){
 
     return {
         createPolygon : createPolygon,
-        createLineForPoly : createLineForPoly,
-        createPointForPoly : createPointForPoly,
+        createEdge : createEdge,
+        createVertex : createVertex,
         createImage : createImage
     }
 

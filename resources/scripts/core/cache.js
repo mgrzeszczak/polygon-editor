@@ -9,6 +9,6 @@ app.cache = (function(){
     }
 
     return {
-        getLine : getLine,
+        getLine : getLine
     }
 })();

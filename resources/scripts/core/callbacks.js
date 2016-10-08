@@ -15,8 +15,6 @@ app.callbacks = (function(){
                 var vertex = {x:e.clientX,y:e.clientY};
                 app.pushVertex(vertex);
                 break;
-            case app.modes.EDIT:
-                break;
         }
     }
 

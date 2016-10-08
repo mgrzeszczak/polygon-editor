@@ -1,63 +1,81 @@
 app.objects = {};
 
 app.objects.polygon = function(){
-    this.points = [];
-    this.lines = [];
+    this.vertices = [];
+    this.edges = [];
 
     this.draw = function(ctx){
-
-        this.lines.forEach(function(line){
-           line.applyRelation();
+        this.edges.forEach(function(edge){
+           edge.relation.apply(edge);
         });
-
-        this.lines.forEach(function(line){
-            line.draw(ctx);
+        this.edges.forEach(function(edge){
+            edge.draw(ctx);
         });
-        this.points.forEach(function(point){
-            point.draw(ctx);
+        this.vertices.forEach(function(vertex){
+            vertex.draw(ctx);
         });
     };
 
     var counter = 0;
 
-    this.addPoint = function(point){
-        this.points.push(point);
-        if (this.points.length>1){
-            this.lines.push(app.factory.createLineForPoly(this.points[this.points.length-2],
-                this.points[this.points.length-1]))
-        }
+    this.addVertex = function(vertex){
+        this.vertices.push(vertex);
+        if (this.vertices.length==1) return;
+        this.edges.push(app.factory.createEdge(this.vertices[this.vertices.length-2],
+            this.vertices[this.vertices.length-1]));
     };
 
     this.close = function(){
-        this.lines.push(app.factory.createLineForPoly(this.points[this.points.length-1],
-            this.points[0]));
+        this.edges.push(app.factory.createEdge(this.vertices[this.vertices.length-1],
+            this.vertices[0]));
+        return this.vertices.length>=3;
     };
 
-    this.calculateLines = function(){
-        this.lines = [];
-        if (this.points.length>1){
-            for (var i=0;i<this.points.length-1;i++){
-                this.lines.push(app.factory.createLineForPoly(this.points[i],
-                    this.points[i+1]))
+    /*
+    this.calculateEdges = function(){
+        this.edges = [];
+        if (this.vertices.length>1){
+            for (var i=0;i<this.vertices.length-1;i++){
+                this.edges.push(app.factory.createEdge(this.vertices[i],
+                    this.vertices[i+1]))
             }
-            this.lines.push(app.factory.createLineForPoly(this.points[this.points.length-1],
-                this.points[0]));
+            this.edges.push(app.factory.createEdge(this.vertices[this.vertices.length-1],
+                this.vertices[0]));
         }
-    };
+    };*/
 
-    this.removeVertex = function(point){
-        this.points.splice(this.points.indexOf(point),1);
-        this.calculateLines();
-        $("img").remove();
+    this.removeVertex = function(vertex){
+        var index = this.vertices.indexOf(vertex);
+
+        var edge = app.factory.createEdge(this.vertices[index-1<0?this.vertices.length-1:index-1],
+            this.vertices[index+1>=this.vertices.length?0:index+1]);
+
+        this.vertices.splice(index,1);
+
+        this.edges.splice(index,1);
+        this.edges.splice(index-1<0?this.edges.length-1:index-1,1);
+        this.edges.splice(index-1<0?this.edges.length-1:index-1,0,edge);
+
+        if (this.vertices.length<3) app.removePoly(this);
+
+        app.utils.clearImages();
         app.enterCreateMode();
         app.enterEditMode();
     };
 
+    this.removeEdge = function(edge){
+
+    };
+
     this.splitEdge = function(edge,x,y){
-        var newPoint = app.factory.createPointForPoly(x,y);
-        this.points.splice(this.points.indexOf(edge.from)+1,0,newPoint);
-        this.calculateLines();
-        $("img").remove();
+        var vertex = app.factory.createVertex(x,y);
+        var e1 = app.factory.createEdge(edge.from,vertex);
+        var e2 = app.factory.createEdge(vertex,edge.to);
+
+        this.vertices.splice(this.vertices.indexOf(edge.from)+1,0,vertex);
+        this.edges.splice(this.edges.indexOf(edge),1,e1,e2);
+
+        app.utils.clearImages();
         app.enterCreateMode();
         app.enterEditMode();
     };
