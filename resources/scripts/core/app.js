@@ -19,6 +19,7 @@ var app = (function(){
 
     function drawLoop(){
         var ctx = app.content.canvas.getContext('2d');
+        ctx.clearRect(0,0,app.content.canvas.width,app.content.canvas.height);
         ctx.fillStyle = app.config.background;
         ctx.fillRect(0,0,app.content.canvas.width,app.content.canvas.height);
         ctx.pixelArray = ctx.getImageData(0,0,app.content.canvas.width,app.content.canvas.height);
@@ -55,6 +56,8 @@ var app = (function(){
                     img.prompt('Edit vertex',[{text:"Remove",value:1}],function(result){
                         if (result == 1){
                             obj.removeVertex(vertex);
+                            app.mode.setMode(app.modes.CREATE);
+                            app.mode.setMode(app.modes.EDIT);
                         }
                     });
                 };
@@ -68,7 +71,7 @@ var app = (function(){
                     center.y-app.config.smallImageSize/2,app.config.smallImageSize,app.config.smallImageSize);
                 obj.imgs.push(img);
                 img.onclick=function(){
-                    img.prompt('Edit edge',[
+                    img.prompt('Edit edge - relation: '+edge.relation.getName(),[
                         {text:"Split",value:1},
                         {text:"Set length",value:2},
                         {text:"Set vertical",value:3},
@@ -85,6 +88,19 @@ var app = (function(){
                         } else if (result==4){
                             edge.relation = new app.relation(app.relations.HORIZONTAL);
                         }
+
+                        obj.vertices.forEach(function(v){
+                            v.visited = false;
+                        });
+                        edge.from.move(edge.from.x,edge.from.y);
+                        //edge.relation.apply(edge,edge.from);
+                        var ok = true;
+                        obj.edges.forEach(function(edge){
+                            if (!edge.relation.check(edge)) ok = false;
+                        });
+                        if (!ok) alert('glitched');
+                        app.mode.setMode(app.modes.CREATE);
+                        app.mode.setMode(app.modes.EDIT);
                     });
                 };
                 document.body.appendChild(img);
@@ -110,18 +126,36 @@ var app = (function(){
 
     function enterMoveMode(){
         objects.forEach(function(obj){
+
+            var meanVertex = {x:0,y:0};
+
+
             obj.vertices.forEach(function(vertex){
+                meanVertex.x+=(vertex.x);
+                meanVertex.y+=(vertex.y);
                 var img = app.factory.createImage(app.config.moveIcon,vertex.x-app.config.smallImageSize/2,
                     vertex.y-app.config.smallImageSize/2,app.config.smallImageSize,app.config.smallImageSize);
+
+                // TODO: moving vertex should affect the other in relation
+
                 img.allowDrag([vertex]);
                 document.body.appendChild(img);
             });
             if (obj.vertices.length==0) return;
-            var firstVertex = obj.vertices[0];
 
-            var img = app.factory.createImage(app.config.moveIcon,firstVertex.x-2*app.config.mediumImageSize,
-                firstVertex.y-2*app.config.mediumImageSize,app.config.mediumImageSize,app.config.mediumImageSize);
+            meanVertex.x/=obj.vertices.length;
+            meanVertex.y/=obj.vertices.length;
+            //var firstVertex = obj.vertices[0];
+
+            var img = app.factory.createImage(app.config.moveIcon,meanVertex.x-2*app.config.mediumImageSize,
+                meanVertex.y-2*app.config.mediumImageSize,app.config.mediumImageSize,app.config.mediumImageSize);
             img.allowDrag(obj.vertices);
+            img.onmouseover = function(){
+              obj.changeEdgeColor(app.config.selectedLineColor);
+            };
+            img.onmouseleave = function(){
+                obj.changeEdgeColor(app.config.lineColor);
+            };
             document.body.appendChild(img);
         });
     }
@@ -139,7 +173,11 @@ var app = (function(){
 
         enterEditMode : enterEditMode,
         enterCreateMode : enterCreateMode,
-        enterMoveMode : enterMoveMode
+        enterMoveMode : enterMoveMode,
+
+        getFirstPoly : function(){
+            return objects[0];
+        }
     };
 
 })();
