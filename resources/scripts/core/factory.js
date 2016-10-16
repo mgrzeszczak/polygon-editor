@@ -1,15 +1,25 @@
 app.factory = (function(){
 
+    var vertexId = 0;
+    var edgeId = 0;
+    var polygonId = 0;
+
     function createPolygon(){
-        return new app.objects.polygon();
+        var polygon = new app.objects.polygon();
+        polygon.id = polygonId++;
+        return polygon;
     }
 
     function createVertex(x,y){
-        return new app.objects.vertex(x,y);
+        var vertex =  new app.objects.vertex(x,y);
+        vertex.id = vertexId++;
+        return vertex;
     }
 
     function createEdge(from,to) {
-        return new app.objects.edge(from, to);
+        var edge = new app.objects.edge(from, to);
+        edge.id = edgeId++;
+        return edge;
     }
 
     function createImage(src,x,y,width,height){

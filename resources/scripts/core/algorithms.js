@@ -1,5 +1,28 @@
 app.algorithms = (function(){
 
+
+    function efficient_bresenham(from,to){
+        var x0 = from.x;
+        var y0 = from.y;
+        var x1 = to.x;
+        var y1 = to.y;
+
+        var dx = Math.abs(x1-x0);
+        var dy = Math.abs(y1-y0);
+        var sx = (x0 < x1) ? 1 : -1;
+        var sy = (y0 < y1) ? 1 : -1;
+        var err = dx-dy;
+
+        var points = [];
+        while(x0!=x1 || y0!=y1){
+            points.push({x:x0,y:y0});
+            var e2 = err<<1;
+            if (e2 >-dy){ err -= dy; x0  += sx; }
+            if (e2 < dx){ err += dx; y0  += sy; }
+        }
+        return points;
+    }
+
     function bresenham(from,to){
         var p1 = {x:from.x,y:from.y};
         var p2 = {x:to.x,y:to.y};
