@@ -120,7 +120,7 @@ var app = (function(){
                             v.visited = false;
                         });
                         edge.from.move(edge.from.x,edge.from.y);
-                        
+
                         var ok = true;
                         obj.edges.forEach(function(edge){
                             if (!edge.relation.check(edge)) ok = false;
