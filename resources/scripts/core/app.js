@@ -23,10 +23,29 @@ var app = (function(){
         ctx.fillStyle = app.config.background;
         ctx.fillRect(0,0,app.content.canvas.width,app.content.canvas.height);
         ctx.pixelArray = ctx.getImageData(0,0,app.content.canvas.width,app.content.canvas.height);
+        ctx.relationImgs = [];
         objects.forEach(function(obj){
             obj.draw(ctx);
         });
         ctx.putImageData(ctx.pixelArray,0,0);
+
+        ctx.relationImgs.forEach(function(imgData){
+            var img = new Image();
+            switch (imgData.type){
+                case app.relations.VERTICAL:
+                    img.src='resources/images/vertical-icon.png';
+                    break;
+                case app.relations.HORIZONTAL:
+                    img.src='resources/images/horizontal_icon.png';
+                    break;
+                case app.relations.LENGTH:
+                    ctx.fillStyle='white';
+                    ctx.font='15px Arial';
+                    ctx.fillText(imgData.length,imgData.pos.x-app.config.mediumImageSize,imgData.pos.y);
+                    return;
+            }
+           ctx.drawImage(img,imgData.pos.x-app.config.mediumImageSize,imgData.pos.y-app.config.mediumImageSize,app.config.mediumImageSize,app.config.mediumImageSize);
+        });
         requestAnimationFrame(drawLoop);
     }
 
@@ -76,19 +95,27 @@ var app = (function(){
                         {text:"Set length",value:2},
                         {text:"Set vertical",value:3},
                         {text:"Set horizontal",value:4},
+                        {text:"Set none",value:5}
                     ],function(result){
-                        if (result==1){
-                            obj.splitEdge(edge,img.x,img.y);
-                        } else if (result==2){
-                            var n = prompt('Length:');
-                            if (isNaN(n) || n<0 || n>1000) return;
-                            edge.relation = new app.relation(app.relations.LENGTH,n);
-                        } else if (result==3){
-                            edge.relation = new app.relation(app.relations.VERTICAL);
-                        } else if (result==4){
-                            edge.relation = new app.relation(app.relations.HORIZONTAL);
+                        switch (~~result){
+                            case 1:
+                                obj.splitEdge(edge,img.x,img.y);
+                                break;
+                            case 2:
+                                var n = prompt('Length:');
+                                if (isNaN(n) || n<0 || n>1000) return;
+                                edge.relation = new app.relation(app.relations.LENGTH,n);
+                                break;
+                            case 3:
+                                edge.relation = new app.relation(app.relations.VERTICAL);
+                                break;
+                            case 4:
+                                edge.relation = new app.relation(app.relations.HORIZONTAL);
+                                break;
+                            case 5:
+                                edge.relation = new app.relation(app.relations.NULL);
+                                break;
                         }
-
                         obj.vertices.forEach(function(v){
                             v.visited = false;
                         });
