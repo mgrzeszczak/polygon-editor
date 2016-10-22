@@ -2,12 +2,22 @@ var app = (function(){
 
     var objects = [];
     var poly = null;
+    //var tmpCanvas = document.createElement('canvas');
+
+    //var ctx = tmpCanvas.getContext('2d');
+    var ctx = document.getElementById('app-canvas').getContext('2d');
 
     function initialize(){
         registerCallbacks();
         app.callbacks.onResize();
         app.mode.setMode(app.modes.CREATE);
+        //tmpCanvas.width = app.content.canvas.width;
+        //tmpCanvas.height = app.content.canvas.height;
+
+
+
         requestAnimationFrame(drawLoop);
+		//setInterval(drawLoop, 1000 / 30.0);
     }
 
     function registerCallbacks(){
@@ -18,10 +28,10 @@ var app = (function(){
     }
 
     function drawLoop(){
-        var ctx = app.content.canvas.getContext('2d');
+        //var ctx = tmpCanvas.getContext('2d'); //app.content.canvas.getContext('2d');
         ctx.clearRect(0,0,app.content.canvas.width,app.content.canvas.height);
-        ctx.fillStyle = app.config.background;
-        ctx.fillRect(0,0,app.content.canvas.width,app.content.canvas.height);
+        //ctx.fillStyle = app.config.background;
+        //ctx.fillRect(0,0,app.content.canvas.width,app.content.canvas.height);
         ctx.pixelArray = ctx.getImageData(0,0,app.content.canvas.width,app.content.canvas.height);
         ctx.relationImgs = [];
         objects.forEach(function(obj){
@@ -46,6 +56,9 @@ var app = (function(){
             }
            ctx.drawImage(img,imgData.pos.x-app.config.mediumImageSize,imgData.pos.y-app.config.mediumImageSize,app.config.mediumImageSize,app.config.mediumImageSize);
         });
+        //dstCtx.clearRect(0,0,app.content.canvas.width,app.content.canvas.height);
+        //dstCtx.drawImage(tmpCanvas,0,0);
+
         requestAnimationFrame(drawLoop);
     }
 

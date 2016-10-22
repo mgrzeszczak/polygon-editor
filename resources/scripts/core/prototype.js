@@ -67,10 +67,20 @@ Image.prototype.prompt = function(title,options,callback){
     });
 };
 
+/*
 CanvasRenderingContext2D.prototype.setPixel = function(pixel,color){
     if (pixel.x<0 || pixel.x>=app.content.canvas.width || pixel.y<0 || pixel.y>=app.content.canvas.height) return;
     this.pixelArray.data[pixel.x*4+pixel.y*4*app.content.canvas.width]=color.r;
     this.pixelArray.data[pixel.x*4+pixel.y*4*app.content.canvas.width+1]=color.g;
     this.pixelArray.data[pixel.x*4+pixel.y*4*app.content.canvas.width+2]=color.b;
     this.pixelArray.data[pixel.x*4+pixel.y*4*app.content.canvas.width+3]=color.a;
+};*/
+
+CanvasRenderingContext2D.prototype.setPixelXY = function(x,y,color){
+    var width = app.content.canvas.width;
+    if (x<0 || x>=width || y<0 || y>=app.content.canvas.height) return;
+    this.pixelArray.data[x*4+y*4*width]=color.r;
+    this.pixelArray.data[x*4+y*4*width+1]=color.g;
+    this.pixelArray.data[x*4+y*4*width+2]=color.b;
+    this.pixelArray.data[x*4+y*4*width+3]=color.a;
 };

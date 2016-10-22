@@ -72,8 +72,8 @@ app.relation = function(type,length){
         switch (this.type){
             case app.relations.NULL:
                 return {
-                    hex : '#FFFFFF',
-                    rgba: {r:255,g:255,b:255,a:255}
+                    hex : '#000000',
+                    rgba: {r:0,g:0,b:0,a:255}
                 };
             case app.relations.LENGTH:
                 return {

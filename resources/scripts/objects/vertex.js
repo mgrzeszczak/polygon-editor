@@ -8,7 +8,7 @@ app.objects.vertex = function(x,y){
     };
 
     this.draw = function(ctx){
-        ctx.setPixel(this,this.color);
+        //ctx.setPixel(this,this.color);
     };
 
     this.move = function(x,y){

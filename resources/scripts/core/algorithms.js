@@ -23,6 +23,90 @@ app.algorithms = (function(){
         return points;
     }
 
+
+    function aa_wu_line(from,to,ctx,color){
+        var y = from.y;
+        var x = from.x;
+
+        var dx = Math.abs(to.x-from.x);
+        var dy = Math.abs(to.y-from.y);
+        var sy = to.y>from.y? 1 : -1;
+        var sx = to.x>from.x? 1 : -1;
+
+        var ya = dx==0? 0 : (to.y-from.y)/dx;
+        var xa = dy==0? 0 : (to.x-from.x)/dy;
+
+        var c = {r:color.r,g:color.g,b:color.b,a:255};
+
+        if (dx>dy){
+            while(x!=to.x) {
+                var a1 = 255*(1-(y-Math.floor(y)));
+                var a2 = 255-a1;
+                c.a = Math.floor(a1);
+                ctx.setPixelXY(x,Math.floor(y),c);
+                c.a = Math.floor(a2);
+                ctx.setPixelXY(x,Math.floor(y)+1,c);
+                x+=sx;
+                y+=ya;
+            }
+        } else {
+            while(y!=to.y) {
+                var a1 = 255*(1-(x-Math.floor(x)));
+                var a2 = 255-a1;
+                c.a = Math.floor(a1);
+                ctx.setPixelXY(Math.floor(x),y,c);
+                c.a = Math.floor(a2);
+                ctx.setPixelXY(Math.floor(x)+1,y,c);
+                x+=xa;
+                y+=sy;
+            }
+        }
+    }
+
+    function quick_bresenham(from,to,ctx,color){
+        var dx = Math.abs(to.x-from.x);
+        var dy = Math.abs(to.y-from.y);
+        var sy = to.y>from.y? 1 : -1;
+        var sx = to.x>from.x? 1 : -1;
+        var ne,e,d;
+
+        var x = from.x;
+        var y = from.y;
+        ctx.setPixelXY(x,y,color);
+        if (dx>dy){
+            ne = 2*(dy-dx);
+            e = 2*dy;
+            d = e-dx;
+            while (x!=to.x){
+                if (d>=0){
+                    x+=sx;
+                    y+=sy;
+                    d+=ne;
+                } else {
+                    x+=sx;
+                    d+=e;
+                }
+                ctx.setPixelXY(x,y,color);
+            }
+        }
+        else {
+            ne = 2*(dx-dy);
+            e = 2*dx;
+            d = e-dy;
+            while (y!=to.y){
+                if (d>=0){
+                    x+=sx;
+                    y+=sy;
+                    d+=ne;
+                } else {
+                    y+=sy;
+                    d+=e;
+                }
+                ctx.setPixelXY(x,y,color);
+            }
+        }
+    }
+
     function bresenham(from,to){
         var p1 = {x:from.x,y:from.y};
         var p2 = {x:to.x,y:to.y};
@@ -61,6 +145,8 @@ app.algorithms = (function(){
     }
 
     return {
-        bresenham : bresenham
+        bresenham : bresenham,
+        drawBresenhamLine : quick_bresenham,
+        aaLine : aa_wu_line
     }
 })();

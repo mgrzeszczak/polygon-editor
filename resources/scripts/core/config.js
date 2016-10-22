@@ -4,7 +4,7 @@ app.config = {
     selectedLineColor : {r:255,g:0,b:0,a:255},
     editIcon : 'resources/images/edit-icon.png',
     moveIcon : 'resources/images/move-icon.png',
-    background : '#000000',
+    background : '#ffffff',
     smallImageSize : 20,
     mediumImageSize : 30,
 };
