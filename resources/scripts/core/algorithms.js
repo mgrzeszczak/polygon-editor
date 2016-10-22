@@ -1,6 +1,6 @@
 app.algorithms = (function(){
 
-
+    // has 1 floating point arithmetic
     function efficient_bresenham(from,to){
         var x0 = from.x;
         var y0 = from.y;
@@ -22,7 +22,6 @@ app.algorithms = (function(){
         }
         return points;
     }
-
 
     function aa_wu_line(from,to,ctx,color){
         var y = from.y;
@@ -63,51 +62,67 @@ app.algorithms = (function(){
         }
     }
 
+
     function quick_bresenham(from,to,ctx,color){
         var dx = Math.abs(to.x-from.x);
         var dy = Math.abs(to.y-from.y);
         var sy = to.y>from.y? 1 : -1;
         var sx = to.x>from.x? 1 : -1;
-        var ne,e,d;
-
         var x = from.x;
         var y = from.y;
+        var dst = to.x;
         ctx.setPixelXY(x,y,color);
-        if (dx>dy){
-            ne = 2*(dy-dx);
+        var flip = false;
+        if (dx<dy){
+            dst = to.y;
+            flip = true;
+            [dx,dy] = [dy,dx];
+            [x,y] = [y,x];
+            [sx,sy] = [sy,sx];
+        }
+        var n = -2*dx;
+        var e = 2*dy;
+        var d = e-dx;
+        while (x!=dst){
+            if (d>=0) {
+                y+=sy;
+                d+=n;
+            }
+            d+=e;
+            x+=sx;
+            ctx.setPixelXY(flip?y:x,flip?x:y,color);
+        }
+        /*if (dx>dy){
+            n = -2*dx;
             e = 2*dy;
             d = e-dx;
             while (x!=to.x){
-                if (d>=0){
-                    x+=sx;
+                if (d>=0) {
                     y+=sy;
-                    d+=ne;
-                } else {
-                    x+=sx;
-                    d+=e;
+                    d+=n;
                 }
+                d+=e;
+                x+=sx;
                 ctx.setPixelXY(x,y,color);
             }
         }
         else {
-            ne = 2*(dx-dy);
+            n = -2*dy;
             e = 2*dx;
             d = e-dy;
             while (y!=to.y){
-                if (d>=0){
+                if (d>=0) {
                     x+=sx;
-                    y+=sy;
-                    d+=ne;
-                } else {
-                    y+=sy;
-                    d+=e;
+                    d+=n;
                 }
+                d+=e;
+                y+=sy;
                 ctx.setPixelXY(x,y,color);
             }
-        }
+        }*/
     }
 
-    function bresenham(from,to){
+    function my_line(from,to){
         var p1 = {x:from.x,y:from.y};
         var p2 = {x:to.x,y:to.y};
         var a = p1.x==p2.x? 0 :(p1.y-p2.y)/(p1.x-p2.x);
@@ -145,7 +160,6 @@ app.algorithms = (function(){
     }
 
     return {
-        bresenham : bresenham,
         drawBresenhamLine : quick_bresenham,
         aaLine : aa_wu_line
     }

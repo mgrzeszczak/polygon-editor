@@ -22,7 +22,7 @@ app.relation = function(type,length){
                 vec.x *=this.length;
                 vec.y *=this.length;
                 //console.log([Math.round(from.x+vec.x),Math.round(from.y+vec.y)]);
-                to.move(Math.round(from.x+vec.x),Math.round(from.y+vec.y));
+                to.move(Math.floor(from.x+vec.x),Math.floor(from.y+vec.y));
                 break;
             case app.relations.VERTICAL:
                 to.move(from.x,to.y);
@@ -40,7 +40,7 @@ app.relation = function(type,length){
                 return true;
                 break;
             case app.relations.LENGTH:
-                return app.utils.distance(edge.from,edge.to)==this.length;
+                return Math.abs(app.utils.distance(edge.from,edge.to)-this.length)<2;
                 break;
             case app.relations.VERTICAL:
                 return edge.to.x == edge.from.x;

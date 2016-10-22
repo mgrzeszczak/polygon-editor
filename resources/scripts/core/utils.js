@@ -7,7 +7,7 @@ app.utils = (function(){
     function distance(a,b){
         var xDiff = a.x-b.x;
         var yDiff = a.y-b.y;
-        return Math.round(Math.sqrt(xDiff*xDiff+yDiff*yDiff));
+        return Math.floor(Math.sqrt(xDiff*xDiff+yDiff*yDiff));
     }
 
     return {
