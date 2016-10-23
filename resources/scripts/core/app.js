@@ -49,7 +49,7 @@ var app = (function(){
                     img.src='resources/images/horizontal_icon.png';
                     break;
                 case app.relations.LENGTH:
-                    ctx.fillStyle='white';
+                    ctx.fillStyle='black';
                     ctx.font='15px Arial';
                     ctx.fillText(imgData.length,imgData.pos.x-app.config.mediumImageSize,imgData.pos.y);
                     return;
