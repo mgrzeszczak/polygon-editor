@@ -8,6 +8,7 @@ var app = (function(){
         registerCallbacks();
         app.callbacks.onResize();
         app.mode.setMode(app.modes.CREATE);
+        app.lastDate = Date.now();
         requestAnimationFrame(drawLoop);
     }
 
@@ -19,13 +20,24 @@ var app = (function(){
     }
 
     function drawLoop(){
+
+        if (Date.now() - app.lastDate > 1000) {
+            app.fps = (Math.round(app.framesCount * 10000 / (Date.now() - app.lastDate)) / 10);
+            console.log(app.fps);
+            app.lastDate = Date.now();
+            app.framesCount = 1;
+        }
+        else {
+            app.framesCount++;
+        }
+
         ctx.clearRect(0,0,app.content.canvas.width,app.content.canvas.height);
-        ctx.pixelArray = ctx.getImageData(0,0,app.content.canvas.width,app.content.canvas.height);
+        //ctx.pixelArray = ctx.getImageData(0,0,app.content.canvas.width,app.content.canvas.height);
         ctx.relationImgs = [];
         objects.forEach(function(obj){
             obj.draw(ctx);
         });
-        ctx.putImageData(ctx.pixelArray,0,0);
+        //ctx.putImageData(ctx.pixelArray,0,0);
 
         ctx.relationImgs.forEach(function(imgData){
             var img = new Image();
@@ -44,6 +56,7 @@ var app = (function(){
             }
            ctx.drawImage(img,imgData.pos.x-app.config.mediumImageSize,imgData.pos.y-app.config.mediumImageSize,app.config.mediumImageSize,app.config.mediumImageSize);
         });
+
         requestAnimationFrame(drawLoop);
     }
 

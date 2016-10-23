@@ -1,28 +1,5 @@
 app.algorithms = (function(){
 
-    // has 1 floating point arithmetic
-    function efficient_bresenham(from,to){
-        var x0 = from.x;
-        var y0 = from.y;
-        var x1 = to.x;
-        var y1 = to.y;
-
-        var dx = Math.abs(x1-x0);
-        var dy = Math.abs(y1-y0);
-        var sx = (x0 < x1) ? 1 : -1;
-        var sy = (y0 < y1) ? 1 : -1;
-        var err = dx-dy;
-
-        var points = [];
-        while(x0!=x1 || y0!=y1){
-            points.push({x:x0,y:y0});
-            var e2 = err<<1;
-            if (e2 >-dy){ err -= dy; x0  += sx; }
-            if (e2 < dx){ err += dx; y0  += sy; }
-        }
-        return points;
-    }
-
     function aa_wu_line(from,to,ctx,color){
         var y = from.y;
         var x = from.x;
@@ -35,31 +12,32 @@ app.algorithms = (function(){
         var ya = dx==0? 0 : (to.y-from.y)/dx;
         var xa = dy==0? 0 : (to.x-from.x)/dy;
 
-        var c = {r:color.r,g:color.g,b:color.b,a:255};
+        var a1,a2;
 
         if (dx>dy){
             while(x!=to.x) {
-                var a1 = 255*(1-(y-Math.floor(y)));
-                var a2 = 255-a1;
-                c.a = Math.floor(a1);
-                ctx.setPixelXY(x,Math.floor(y),c);
-                c.a = Math.floor(a2);
-                ctx.setPixelXY(x,Math.floor(y)+1,c);
+                a1 = (1-(y-Math.floor(y)));
+                a2 = 1-a1;
+                ctx.globalAlpha = a1;
+                ctx.setPixelXY(x,Math.floor(y),color);
+                ctx.globalAlpha = a2;
+                ctx.setPixelXY(x,Math.floor(y)+1,color);
                 x+=sx;
                 y+=ya;
             }
         } else {
             while(y!=to.y) {
-                var a1 = 255*(1-(x-Math.floor(x)));
-                var a2 = 255-a1;
-                c.a = Math.floor(a1);
-                ctx.setPixelXY(Math.floor(x),y,c);
-                c.a = Math.floor(a2);
-                ctx.setPixelXY(Math.floor(x)+1,y,c);
+                a1 = (1-(x-Math.floor(x)));
+                a2 = 1-a1;
+                ctx.globalAlpha = a1;
+                ctx.setPixelXY(Math.floor(x),y,color);
+                ctx.globalAlpha = a2;
+                ctx.setPixelXY(Math.floor(x)+1,y,color);
                 x+=xa;
                 y+=sy;
             }
         }
+        ctx.globalAlpha = 1;
     }
 
 
@@ -79,6 +57,8 @@ app.algorithms = (function(){
             [dx,dy] = [dy,dx];
             [x,y] = [y,x];
             [sx,sy] = [sy,sx];
+            [CanvasRenderingContext2D.prototype.setPixelXY,CanvasRenderingContext2D.prototype.setPixelYX]
+                = [CanvasRenderingContext2D.prototype.setPixelYX,CanvasRenderingContext2D.prototype.setPixelXY];
         }
         var n = -2*dx;
         var e = 2*dy;
@@ -90,36 +70,11 @@ app.algorithms = (function(){
             }
             d+=e;
             x+=sx;
-            ctx.setPixelXY(flip?y:x,flip?x:y,color);
+            ctx.setPixelXY(x,y,color);
         }
-        /*if (dx>dy){
-            n = -2*dx;
-            e = 2*dy;
-            d = e-dx;
-            while (x!=to.x){
-                if (d>=0) {
-                    y+=sy;
-                    d+=n;
-                }
-                d+=e;
-                x+=sx;
-                ctx.setPixelXY(x,y,color);
-            }
-        }
-        else {
-            n = -2*dy;
-            e = 2*dx;
-            d = e-dy;
-            while (y!=to.y){
-                if (d>=0) {
-                    x+=sx;
-                    d+=n;
-                }
-                d+=e;
-                y+=sy;
-                ctx.setPixelXY(x,y,color);
-            }
-        }*/
+        if (flip)
+            [CanvasRenderingContext2D.prototype.setPixelXY,CanvasRenderingContext2D.prototype.setPixelYX]
+            = [CanvasRenderingContext2D.prototype.setPixelYX,CanvasRenderingContext2D.prototype.setPixelXY];
     }
 
     function my_line(from,to){
