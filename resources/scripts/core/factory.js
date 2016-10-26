@@ -32,6 +32,9 @@ app.factory = (function(){
         img.setAttribute('height', height+"px");
         img.setAttribute('width', width+"px");
         img.setAttribute("style", "position:absolute;top:"+y+";left:"+x+";");
+		img.allowDrag = allowDrag.bind(img)
+		img.prompt = bootBoxPrompt.bind(img);
+		img.setPos = setPos.bind(img);
         return img;
     }
 

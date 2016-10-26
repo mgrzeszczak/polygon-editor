@@ -14,20 +14,10 @@ app.objects.polygon = function(){
     };
 
     this.draw = function(ctx){
-        /*this.edges.forEach(function(edge){
-            if (!edge.relation.check(edge))
-                edge.relation.apply(edge);
-        });*/
         this.edges.forEach(function(edge){
             edge.draw(ctx);
         });
-
-        this.vertices.forEach(function(vertex){
-            vertex.draw(ctx);
-        });
     };
-
-    var counter = 0;
 
     this.addVertex = function(vertex){
         vertex.polygon = this;
@@ -99,4 +89,17 @@ app.objects.polygon = function(){
         });
         $(".remove").remove();
     };
+
+	this.clone = function(){
+		var obj = new app.objects.polygon();
+		this.vertices.forEach(function(v){
+			obj.addVertex(new app.objects.vertex(v.x,v.y));
+		});
+		obj.close();
+		obj.edges.forEach(function(e){
+			e.cloned = true;
+			e.color = '#D3D3D3';
+		});
+		return obj;
+	};
 };

@@ -1,18 +1,28 @@
-Image.prototype.setPos = function(x,y){
+function setPos(x,y){
     this.setAttribute("style", "position:absolute;top:"+(y)+";left:"+(x)+";");
     this.x = x;
     this.y = y;
-};
+}
 
-Image.prototype.allowDrag = function(vertices){
+function bootBoxPrompt(title,options,callback){
+    bootbox.prompt({
+        title : title,
+        inputType: 'select',
+        inputOptions: options,
+        callback: callback
+    });
+}
+
+function allowDrag(vertices,img){
+	
     var startPos = null;
     var self = this;
 
     function startDrag(e) {
+		app.setGhostCopy(img.obj.clone());
         self.setAttribute("class","save");
         $("img").not(".save").remove();
         startPos = {x:e.clientX,y:e.clientY};
-
         self.beginPos = {x:self.x,y:self.y};
         vertices.forEach(function(vertex){
             vertex.beginPos={x:vertex.x,y:vertex.y};
@@ -21,7 +31,7 @@ Image.prototype.allowDrag = function(vertices){
         if (vertices.length==1) vertices[0].moving = true;
         return false;
     }
-
+	startDrag.img = img;
 
 
     function doDrag(e) {
@@ -39,9 +49,6 @@ Image.prototype.allowDrag = function(vertices){
                v.visited = false;
             });
            vertex.move(vertex.beginPos.x+diff.x,vertex.beginPos.y+diff.y);
-            /*vertex.polygon.edges.forEach(function(edge){
-               if (!edge.relation.check(edge)) alert('Glitched!');
-            });*/
         }
 
         return false;
@@ -51,30 +58,14 @@ Image.prototype.allowDrag = function(vertices){
         if (vertices.length==1) vertices[0].moving = false;
         document.body.removeChild(self);
         document.onmousemove=null;
+		app.setGhostCopy(null);
         app.enterMoveMode();
     }
 
     this.onmousedown = startDrag;
     this.onmouseup = stopDrag;
-};
+}
 
-Image.prototype.prompt = function(title,options,callback){
-    bootbox.prompt({
-        title : title,
-        inputType: 'select',
-        inputOptions: options,
-        callback: callback
-    });
-};
-
-/*
-CanvasRenderingContext2D.prototype.setPixel = function(pixel,color){
-    if (pixel.x<0 || pixel.x>=app.content.canvas.width || pixel.y<0 || pixel.y>=app.content.canvas.height) return;
-    this.pixelArray.data[pixel.x*4+pixel.y*4*app.content.canvas.width]=color.r;
-    this.pixelArray.data[pixel.x*4+pixel.y*4*app.content.canvas.width+1]=color.g;
-    this.pixelArray.data[pixel.x*4+pixel.y*4*app.content.canvas.width+2]=color.b;
-    this.pixelArray.data[pixel.x*4+pixel.y*4*app.content.canvas.width+3]=color.a;
-};*/
 
 CanvasRenderingContext2D.prototype.setPixel = function(x,y,color){
     this.strokeStyle = color;
@@ -84,33 +75,10 @@ CanvasRenderingContext2D.prototype.setPixel = function(x,y,color){
     this.stroke();
 };
 
-function componentToHex(c) {
-    var hex = c.toString(16);
-    return hex.length == 1 ? "0" + hex : hex;
-}
-
-function rgbaToHex(r, g, b,a) {
-    return "#" +componentToHex(a)+ componentToHex(r) + componentToHex(g) + componentToHex(b);
-}
-
-
 CanvasRenderingContext2D.prototype.setPixelXY = function(x,y,color){
-    //console.log(color);
     this.setPixel(x,y,color);
-    /*var width = app.content.canvas.width;
-    if (x<0 || x>=width || y<0 || y>=app.content.canvas.height) return;
-    this.pixelArray.data[x*4+y*4*width]=color.r;
-    this.pixelArray.data[x*4+y*4*width+1]=color.g;
-    this.pixelArray.data[x*4+y*4*width+2]=color.b;
-    this.pixelArray.data[x*4+y*4*width+3]=color.a;*/
 };
 
 CanvasRenderingContext2D.prototype.setPixelYX = function(y,x,color){
     this.setPixel(x,y,color);
-    /*var width = app.content.canvas.width;
-    if (x<0 || x>=width || y<0 || y>=app.content.canvas.height) return;
-    this.pixelArray.data[x*4+y*4*width]=color.r;
-    this.pixelArray.data[x*4+y*4*width+1]=color.g;
-    this.pixelArray.data[x*4+y*4*width+2]=color.b;
-    this.pixelArray.data[x*4+y*4*width+3]=color.a;*/
 };

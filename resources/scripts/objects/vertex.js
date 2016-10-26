@@ -7,10 +7,6 @@ app.objects.vertex = function(x,y){
         return app.factory.createVertex(this.x,this.y);
     };
 
-    this.draw = function(ctx){
-        //ctx.setPixel(this,this.color);
-    };
-
     this.move = function(x,y){
         this.x = x;
         this.y = y;

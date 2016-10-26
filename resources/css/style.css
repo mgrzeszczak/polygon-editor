@@ -3,8 +3,14 @@
     padding:0;
 }
 
-html, body { width:100%; height:100%; } /* just to be sure these are full screen*/
+html, body { width:100%; height:100%; }
 
 body {
     overflow: hidden;
+}
+
+.hover {
+	position: absolute;
+	left: 0px;
+	bottom: 0px;
 }

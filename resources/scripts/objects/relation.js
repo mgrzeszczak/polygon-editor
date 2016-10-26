@@ -21,16 +21,13 @@ app.relation = function(type,length){
                 var vec = {x:(to.x-from.x)/dist,y:(to.y-from.y)/dist};
                 vec.x *=this.length;
                 vec.y *=this.length;
-                //console.log([Math.round(from.x+vec.x),Math.round(from.y+vec.y)]);
                 to.move(Math.floor(from.x+vec.x),Math.floor(from.y+vec.y));
                 break;
             case app.relations.VERTICAL:
                 to.move(from.x,to.y);
-                //to.x = from.x;
                 break;
             case app.relations.HORIZONTAL:
                 to.move(to.x,from.y);
-                //to.y = from.y;
                 break;
         }
     };

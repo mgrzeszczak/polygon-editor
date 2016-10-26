@@ -3,6 +3,7 @@ var app = (function(){
     var objects = [];
     var poly = null;
     var ctx = document.getElementById('app-canvas').getContext('2d');
+	var ghostCopy = null;
 
     function initialize(){
         registerCallbacks();
@@ -20,24 +21,13 @@ var app = (function(){
     }
 
     function drawLoop(){
-
-        if (Date.now() - app.lastDate > 1000) {
-            app.fps = (Math.round(app.framesCount * 10000 / (Date.now() - app.lastDate)) / 10);
-            console.log(app.fps);
-            app.lastDate = Date.now();
-            app.framesCount = 1;
-        }
-        else {
-            app.framesCount++;
-        }
-
         ctx.clearRect(0,0,app.content.canvas.width,app.content.canvas.height);
-        //ctx.pixelArray = ctx.getImageData(0,0,app.content.canvas.width,app.content.canvas.height);
         ctx.relationImgs = [];
+		
+		if (ghostCopy!=null) ghostCopy.draw(ctx);
         objects.forEach(function(obj){
             obj.draw(ctx);
         });
-        //ctx.putImageData(ctx.pixelArray,0,0);
 
         ctx.relationImgs.forEach(function(imgData){
             var img = new Image();
@@ -94,7 +84,6 @@ var app = (function(){
                 document.body.appendChild(img);
             });
 
-
             obj.edges.forEach(function(edge){
                 var center = {x:(edge.to.x+edge.from.x)/2,y:(edge.to.y+edge.from.y)/2};
                 var img = app.factory.createImage(app.config.editIcon,center.x-app.config.smallImageSize/2,
@@ -139,8 +128,6 @@ var app = (function(){
                             edge.to.move(edge.to.x,edge.to.y);
                         };
                         apply();
-
-
                         var ok = true;
                         obj.edges.forEach(function(edge){
                             if (!edge.relation.check(edge)) {
@@ -154,11 +141,8 @@ var app = (function(){
                             edge.relation = new app.relation(app.relations.NULL);
                             apply();
                         }
-
                         app.mode.setMode(app.modes.CREATE);
                         app.mode.setMode(app.modes.EDIT);
-
-
                     });
                 };
                 document.body.appendChild(img);
@@ -171,7 +155,7 @@ var app = (function(){
                 firstVertex.y-2*app.config.mediumImageSize,app.config.mediumImageSize,app.config.mediumImageSize);
             obj.imgs.push(img);
             img.onclick=function(){
-              img.prompt('Edit polygon',[{text:"Remove",value:1}],function(result){
+              img.prompt('Edit polygon',[{text:"Remove",value:1},{text:"Fill",value:2}],function(result){
                   if (result == 1){
                       objects.splice(objects.indexOf(obj),1);
                       obj.clearImgs();
@@ -184,9 +168,7 @@ var app = (function(){
 
     function enterMoveMode(){
         objects.forEach(function(obj){
-
             var meanVertex = {x:0,y:0};
-
 
             obj.vertices.forEach(function(vertex){
                 meanVertex.x+=(vertex.x);
@@ -194,26 +176,19 @@ var app = (function(){
                 var img = app.factory.createImage(app.config.moveIcon,vertex.x-app.config.smallImageSize/2,
                     vertex.y-app.config.smallImageSize/2,app.config.smallImageSize,app.config.smallImageSize);
 
-                // TODO: moving vertex should affect the other in relation
-
-                img.allowDrag([vertex]);
+				img.obj = obj;
+                img.allowDrag([vertex],img);
                 document.body.appendChild(img);
             });
             if (obj.vertices.length==0) return;
 
             meanVertex.x/=obj.vertices.length;
             meanVertex.y/=obj.vertices.length;
-            //var firstVertex = obj.vertices[0];
 
             var img = app.factory.createImage(app.config.moveIcon,meanVertex.x-2*app.config.mediumImageSize,
                 meanVertex.y-2*app.config.mediumImageSize,app.config.mediumImageSize,app.config.mediumImageSize);
-            img.allowDrag(obj.vertices);
-            img.onmouseover = function(){
-              obj.changeEdgeColor(app.config.selectedLineColor);
-            };
-            img.onmouseleave = function(){
-                obj.changeEdgeColor(app.config.lineColor);
-            };
+				img.obj = obj;
+            img.allowDrag(obj.vertices,img);
             document.body.appendChild(img);
         });
     }
@@ -235,6 +210,10 @@ var app = (function(){
 
         getFirstPoly : function(){
             return objects[0];
+        },
+		
+		setGhostCopy : function(obj){
+            ghostCopy=obj;
         }
     };
 
