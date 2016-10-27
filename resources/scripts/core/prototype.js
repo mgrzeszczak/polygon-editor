@@ -68,11 +68,20 @@ function allowDrag(vertices,img){
 
 
 CanvasRenderingContext2D.prototype.setPixel = function(x,y,color){
-    this.strokeStyle = color;
+    //if (x<0 || x>=app.content.canvas.width || y<0 || y>=app.content.canvas.height) return;
+    //var data = this.data;//pixelArray.buf;
+    this.data[x+y*2000] = 255<<24;
+    //data[x*4+y*4*2000]=0;
+    //data[x*4+y*4*2000+1]=0;
+    //data[x*4+y*4*2000+2]=0;
+    //data[x*4+y*4*2000+3]=255;
+    //this.fillStyle = color;
+    //this.fillRect(x,y,1,1);
+    /*
     this.beginPath();
     this.moveTo(x,y);
     this.lineTo(x+1,y+1);
-    this.stroke();
+    this.stroke();*/
 };
 
 CanvasRenderingContext2D.prototype.setPixelXY = function(x,y,color){

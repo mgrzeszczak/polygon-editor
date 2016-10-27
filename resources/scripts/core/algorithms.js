@@ -1,5 +1,69 @@
 app.algorithms = (function(){
 
+    function scan_line(ctx,polygon){
+            var edges = polygon.edges;
+
+            var yMin = edges[0].from.y;
+            var yMax = edges[0].from.y;
+
+            var et = {};
+
+            edges.forEach(function(edge){
+                var from = edge.from;
+                var to = edge.to;
+
+                //if (from.y==to.y) return;
+
+                if (to.y<from.y) {
+                    var tmp = from;
+                    from = to;
+                    to = tmp;
+                }
+                if (from.y<yMin) yMin = from.y;
+                if (to.y>yMax) yMax = to.y;
+
+                var dx = to.x-from.x;
+                var dy = to.y-from.y;
+
+                var step = dy==0? 0 :dx/dy;
+
+                if (et[from.y]==undefined) et[from.y]=[];
+                et[from.y].push({yMax:to.y,xMin:from.x,step:step});
+            });
+
+            var aet = [];
+            var y = yMin;
+
+        var i;
+        while (y!=yMax){
+            if (et[y]!=undefined)
+                aet = aet.concat(et[y]);
+
+            aet.sort(function(a,b){return a.xMin<b.xMin});
+
+            for (i=0;i<aet.length-1;i+=2){
+                var a = aet[i];
+                var b = aet[i+1];
+
+                //ctx.strokeStyle = '#d3d3d3';
+                //ctx.beginPath();
+                //ctx.moveTo(Math.floor(a.xMin),y);
+                //ctx.lineTo(Math.floor(b.xMin),y);
+                //ctx.stroke();
+
+                quick_bresenham({x:Math.floor(a.xMin),y:y},{x:Math.floor(b.xMin),y:y},ctx,'#000000');
+            }
+
+            for (i=aet.length-1;i>=0;i--){
+                if (aet[i].yMax==y) aet.splice(i,1);
+            }
+            y++;
+            aet.forEach(function(s){
+               s.xMin+=s.step;
+            });
+        }
+    }
+
     function aa_wu_line(from,to,ctx,color){
         var y = from.y;
         var x = from.x;
@@ -70,6 +134,8 @@ app.algorithms = (function(){
             }
             d+=e;
             x+=sx;
+
+            //ctx.data[x+2000*y]=255<<24;
             ctx.setPixelXY(x,y,color);
         }
         if (flip)
@@ -79,6 +145,7 @@ app.algorithms = (function(){
 
     return {
         drawBresenhamLine : quick_bresenham,
-        aaLine : aa_wu_line
+        aaLine : aa_wu_line,
+        fillPolygon : scan_line
     }
 })();

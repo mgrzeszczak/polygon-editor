@@ -17,6 +17,8 @@ app.objects.polygon = function(){
         this.edges.forEach(function(edge){
             edge.draw(ctx);
         });
+        if (this.closed)
+            app.algorithms.fillPolygon(ctx,this);
     };
 
     this.addVertex = function(vertex){
@@ -33,7 +35,7 @@ app.objects.polygon = function(){
             this.vertices[0]));
 
         this.mapEdges();
-
+        this.closed = true;
         return true;
     };
 
