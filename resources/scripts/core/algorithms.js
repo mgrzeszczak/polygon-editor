@@ -1,5 +1,14 @@
 app.algorithms = (function(){
 
+    function putPixel(ctx,x,y,c){
+        //if (x<0 || x>app.mwidth || y<0 || y>app.mheight) return;
+        ctx.data[x+y*app.mwidth] = c.a<<24 | c.r<<16 | c.g<<8 | c.b;
+    }
+    function putPixelR(ctx,x,y,c){
+        //if (x<0 || x>app.mwidth || y<0 || y>app.mheight) return;
+        ctx.data[x*app.mwidth+y] = c.a<<24 | c.r<<16 | c.g<<8 | c.b;
+    }
+
     function scan_line(ctx,polygon){
             var edges = polygon.edges;
 
@@ -35,6 +44,7 @@ app.algorithms = (function(){
             var y = yMin;
 
         var i;
+        var colorBlack = {r:0,g:0,b:0,a:255};
         while (y!=yMax){
             if (et[y]!=undefined)
                 aet = aet.concat(et[y]);
@@ -45,13 +55,7 @@ app.algorithms = (function(){
                 var a = aet[i];
                 var b = aet[i+1];
 
-                //ctx.strokeStyle = '#d3d3d3';
-                //ctx.beginPath();
-                //ctx.moveTo(Math.floor(a.xMin),y);
-                //ctx.lineTo(Math.floor(b.xMin),y);
-                //ctx.stroke();
-
-                quick_bresenham({x:Math.floor(a.xMin),y:y},{x:Math.floor(b.xMin),y:y},ctx,'#000000');
+                quick_bresenham({x:Math.floor(a.xMin),y:y},{x:Math.floor(b.xMin),y:y},ctx,colorBlack);
             }
 
             for (i=aet.length-1;i>=0;i--){
@@ -83,9 +87,9 @@ app.algorithms = (function(){
                 a1 = (1-(y-Math.floor(y)));
                 a2 = 1-a1;
                 ctx.globalAlpha = a1;
-                ctx.setPixelXY(x,Math.floor(y),color);
+                putPixel(ctx,x,Math.floor(y),color);
                 ctx.globalAlpha = a2;
-                ctx.setPixelXY(x,Math.floor(y)+1,color);
+                putPixel(ctx,x,Math.floor(y)+1,color);
                 x+=sx;
                 y+=ya;
             }
@@ -94,9 +98,9 @@ app.algorithms = (function(){
                 a1 = (1-(x-Math.floor(x)));
                 a2 = 1-a1;
                 ctx.globalAlpha = a1;
-                ctx.setPixelXY(Math.floor(x),y,color);
+                putPixel(ctx,Math.floor(x),y,color);
                 ctx.globalAlpha = a2;
-                ctx.setPixelXY(Math.floor(x)+1,y,color);
+                putPixel(ctx,Math.floor(x)+1,y,color);
                 x+=xa;
                 y+=sy;
             }
@@ -104,28 +108,129 @@ app.algorithms = (function(){
         ctx.globalAlpha = 1;
     }
 
+/*
+    void SymmetricLine(int x1, int y1, int x2, int y2)
+    {
+        int dx = x2 - x1;
+        int dy = y2 - y1;
+        int incrE = 2*dy;
+        int incrNE = 2*(dy - dx);
+        int d = 2*dy - dx;
+        int xf=x1;
+        int yf=y1;
+        int xb=x2;
+        int yb=y2;
+        putpixel(xf,yf);
+        putpixel(xb,yb);
+        while (xf<xb)
+        {
+            xf++;
+            xb--;
+            if (d<0) //Choose E and W
+                d+=incrE;
+            else //Choose NE and SW
+            {
+                d+=incrNE;
+                yf++;
+                yb--;
+            }
+            putpixel(xf,yf);
+            putpixel(xb,yb);
+        }
+    }*/
+
+    function symmetric_bresenham(from,to,ctx,color){
+        var dx = Math.abs(to.x-from.x);
+        var dy = Math.abs(to.y-from.y);
+
+        var sy = 1;
+        if (to.y<from.y) sy = -1;
+        var sx = 1;
+        if (from.x>to.x) sx = -1;
+        //var sy = to.y>from.y? 1 : -1;
+        //var sx = to.x>from.x? 1 : -1;
+
+        var x = from.x;
+        var y = from.y;
+
+        var xb = to.x;
+        var yb = to.y;
+
+        var dst = to.x;
+
+        var pixel = putPixel;
+        pixel(ctx,x,y,color);
+        pixel(ctx,xb,yb,color);
+        if (dx<dy){
+            dst = to.y;
+            var tmp;
+            tmp = dx;
+            dx = dy;
+            dy = tmp;
+            tmp = x;
+            x = y;
+            y = tmp;
+            tmp = xb;
+            xb = yb;
+            yb = tmp;
+            tmp = sx;
+            sx = sy;
+            sy = tmp;
+            pixel = putPixelR;
+        }
+        var n = -(dx<<1);
+        var e = dy<<1;
+        var d = e-dx;
+        while (x<xb){
+            if (d>=0) {
+                y+=sy;
+                yb-=sy;
+                d+=n;
+            }
+            d+=e;
+            x+=sx;
+            xb-=sx;
+            pixel(ctx,x,y,color);
+            pixel(ctx,xb,yb,color);
+        }
+    }
 
     function quick_bresenham(from,to,ctx,color){
         var dx = Math.abs(to.x-from.x);
         var dy = Math.abs(to.y-from.y);
-        var sy = to.y>from.y? 1 : -1;
-        var sx = to.x>from.x? 1 : -1;
+
+        /*var dx = to.x-from.x;
+        if (dx<0) dx=-dx;
+        var dy = to.y-from.y;
+        if (dy<0) dy=-dy;*/
+
+        var sy = 1;
+        if (to.y<from.y) sy = -1;
+        var sx = 1;
+        if (from.x>to.x) sx = -1;
+        //var sy = to.y>from.y? 1 : -1;
+        //var sx = to.x>from.x? 1 : -1;
         var x = from.x;
         var y = from.y;
         var dst = to.x;
-        ctx.setPixelXY(x,y,color);
-        var flip = false;
+        var pixel = putPixel;
+        pixel(ctx,x,y,color);
         if (dx<dy){
             dst = to.y;
-            flip = true;
-            [dx,dy] = [dy,dx];
-            [x,y] = [y,x];
-            [sx,sy] = [sy,sx];
-            [CanvasRenderingContext2D.prototype.setPixelXY,CanvasRenderingContext2D.prototype.setPixelYX]
-                = [CanvasRenderingContext2D.prototype.setPixelYX,CanvasRenderingContext2D.prototype.setPixelXY];
+            var tmp;
+            tmp = dx;
+            dx = dy;
+            dy = tmp;
+            tmp = x;
+            x = y;
+            y = tmp;
+            tmp = sx;
+            sx = sy;
+            sy = tmp;
+            pixel = putPixelR;
         }
-        var n = -2*dx;
-        var e = 2*dy;
+        var n = -(dx<<1);
+        var e = dy<<1;
         var d = e-dx;
         while (x!=dst){
             if (d>=0) {
@@ -134,13 +239,8 @@ app.algorithms = (function(){
             }
             d+=e;
             x+=sx;
-
-            //ctx.data[x+2000*y]=255<<24;
-            ctx.setPixelXY(x,y,color);
+            pixel(ctx,x,y,color);
         }
-        if (flip)
-            [CanvasRenderingContext2D.prototype.setPixelXY,CanvasRenderingContext2D.prototype.setPixelYX]
-            = [CanvasRenderingContext2D.prototype.setPixelYX,CanvasRenderingContext2D.prototype.setPixelXY];
     }
 
     return {

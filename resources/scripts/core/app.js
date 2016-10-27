@@ -2,9 +2,10 @@ var app = (function(){
 
     var objects = [];
     var poly = null;
-    var ctx = document.getElementById('app-canvas').getContext('2d');
 	var ghostCopy = null;
 
+    var canvas = document.getElementById('app-canvas');
+    var ctx = canvas.getContext('2d');
     var memCanvas;
     var memCtx;
 
@@ -12,20 +13,21 @@ var app = (function(){
         registerCallbacks();
         app.callbacks.onResize();
         app.mode.setMode(app.modes.CREATE);
+
         app.lastDate = Date.now();
+        app.framesCount = 0;
+
+        app.mwidth = 1920;
+        app.mheight= 1080;
 
         memCanvas = document.createElement('canvas');
-        memCanvas.width = 2000;
-        memCanvas.height = 2000;
+        memCanvas.width = app.mwidth;
+        memCanvas.height = app.mheight;
         memCtx = memCanvas.getContext('2d');
-
         memCtx.pixelArray = memCtx.getImageData(0,0,memCanvas.width,memCanvas.height);
-
         memCtx.buf = new ArrayBuffer(memCtx.pixelArray.data.length);
         memCtx.buf8 = new Uint8ClampedArray(memCtx.buf);
         memCtx.data = new Uint32Array(memCtx.buf);
-
-        app.framesCount = 0;
 
         requestAnimationFrame(drawLoop);
     }
@@ -38,7 +40,8 @@ var app = (function(){
     }
 
     function drawLoop(){
-
+        var i,len;
+        // FPS
         if (Date.now() - app.lastDate > 1000) {
             console.log(app.framesCount + ' ' + (Date.now()-app.lastDate));
             app.lastDate = Date.now();
@@ -48,39 +51,46 @@ var app = (function(){
             app.framesCount++;
         }
 
-        ctx.clearRect(0,0,app.content.canvas.width,app.content.canvas.height);
+        ctx.clearRect(0,0,canvas.width,canvas.height);
         var tmp = ctx;
         ctx = memCtx;
 
         var data = ctx.data;
-
-        for (var x=0,len=2000*2000;x<len;x++){
-            data[x] = 0xffff;
-                    /*;		// red*/
-                /*data[x*4+y*4*2000]=255;
-                data[x*4+y*4*2000+1]=255;
-                data[x*4+y*4*2000+2]=255;
-                data[x*4+y*4*2000+3]=255;*/
+        var offset;
+        for (i=0,len = app.mwidth*app.mwidth/8;i<len;i++){
+            offset = i;
+            data[offset] = 0;
+            offset += len;
+            data[offset] = 0;
+            offset += len;
+            data[offset] = 0;
+            offset += len;
+            data[offset] = 0;
+            offset += len;
+            data[offset] = 0;
+            offset += len;
+            data[offset] = 0;
+            offset += len;
+            data[offset] = 0;
+            offset += len;
+            data[offset] = 0;
         }
-
-        //ctx.clearRect(0,0,app.content.canvas.width,app.content.canvas.height);
-
-        ctx.relationImgs = [];
-
 
         var v1 = {x:0,y:0};
         var v2 = {x:1800,y:1000};
-        for (var i=0;i<1000;i++){
-            app.algorithms.drawBresenhamLine(v1,v2,ctx,'');
+        var color = {r:0,g:0,b:0,a:255};
+
+        for (i=0;i<5000;i++){
+            app.algorithms.drawBresenhamLine(v1,v2,ctx,color);
         }
 
-        objects.forEach(function(obj){
-            obj.draw(ctx);
-        });
+        for(i=0,len=objects.length;i<len;i++){
+            objects[i].draw(ctx);
+        }
+
         /*
+        ctx.relationImgs = [];
 		if (ghostCopy!=null) ghostCopy.draw(ctx);
-
-
         ctx.relationImgs.forEach(function(imgData){
             var img = new Image();
             switch (imgData.type){
@@ -99,11 +109,10 @@ var app = (function(){
            ctx.drawImage(img,imgData.pos.x-app.config.mediumImageSize,imgData.pos.y-app.config.mediumImageSize,app.config.mediumImageSize,app.config.mediumImageSize);
         });
         */
+
         ctx.pixelArray.data.set(ctx.buf8);
         ctx.putImageData(ctx.pixelArray,0,0);
-
         ctx = tmp;
-
         ctx.drawImage(memCanvas,0,0);
         requestAnimationFrame(drawLoop);
     }

@@ -7,16 +7,16 @@ app.objects.polygon = function(){
 
     this.mapEdges = function(){
         this.vertexToEdgeMap = {};
-        for (var i=0;i<this.vertices.length;i++){
+        for (var i=0,len=this.vertices.length;i<len;i++){
             var vertex = this.vertices[i];
             this.vertexToEdgeMap[vertex.id] = [this.edges[i],this.edges[i-1<0?this.edges.length-1:i-1]];
         }
     };
 
     this.draw = function(ctx){
-        this.edges.forEach(function(edge){
-            edge.draw(ctx);
-        });
+        var i,len;
+        for (i=0,len=this.edges.length;i<len;i++) this.edges[i].draw(ctx);
+
         if (this.closed)
             app.algorithms.fillPolygon(ctx,this);
     };
@@ -57,10 +57,6 @@ app.objects.polygon = function(){
         app.utils.clearImages();
         app.enterCreateMode();
         app.enterEditMode();
-    };
-
-    this.removeEdge = function(edge){
-
     };
 
     this.splitEdge = function(edge,x,y){
