@@ -42,6 +42,7 @@ var app = (function(){
     function drawLoop(){
         var i,len;
         // FPS
+        /*
         if (Date.now() - app.lastDate > 1000) {
             console.log(app.framesCount + ' ' + (Date.now()-app.lastDate));
             app.lastDate = Date.now();
@@ -49,44 +50,24 @@ var app = (function(){
         }
         else {
             app.framesCount++;
-        }
-
+        }*/
+        //ctx.clearData();
         ctx.clearRect(0,0,canvas.width,canvas.height);
         var tmp = ctx;
         ctx = memCtx;
-
-        var data = ctx.data;
-        var offset;
-        for (i=0,len = app.mwidth*app.mwidth/8;i<len;i++){
-            offset = i;
-            data[offset] = 0;
-            offset += len;
-            data[offset] = 0;
-            offset += len;
-            data[offset] = 0;
-            offset += len;
-            data[offset] = 0;
-            offset += len;
-            data[offset] = 0;
-            offset += len;
-            data[offset] = 0;
-            offset += len;
-            data[offset] = 0;
-            offset += len;
-            data[offset] = 0;
-        }
+        ctx.data.fill(0);
 
         var v1 = {x:0,y:0};
         var v2 = {x:1800,y:1000};
-        var color = {r:0,g:0,b:0,a:255};
 
-        for (i=0;i<5000;i++){
-            app.algorithms.drawBresenhamLine(v1,v2,ctx,color);
+        for (i=0;i<1000;i++){
+            app.algorithms.drawBresenhamLine(v1.x,v1.y,v2.x,v2.y,ctx,255<<24);
         }
 
+        /*
         for(i=0,len=objects.length;i<len;i++){
             objects[i].draw(ctx);
-        }
+        }*/
 
         /*
         ctx.relationImgs = [];

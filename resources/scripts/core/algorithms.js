@@ -1,12 +1,10 @@
 app.algorithms = (function(){
 
     function putPixel(ctx,x,y,c){
-        //if (x<0 || x>app.mwidth || y<0 || y>app.mheight) return;
-        ctx.data[x+y*app.mwidth] = c.a<<24 | c.r<<16 | c.g<<8 | c.b;
+        ctx.data[x+y*app.mwidth] = c;
     }
     function putPixelR(ctx,x,y,c){
-        //if (x<0 || x>app.mwidth || y<0 || y>app.mheight) return;
-        ctx.data[x*app.mwidth+y] = c.a<<24 | c.r<<16 | c.g<<8 | c.b;
+        ctx.data[x*app.mwidth+y] = c;
     }
 
     function scan_line(ctx,polygon){
@@ -195,6 +193,52 @@ app.algorithms = (function(){
         }
     }
 
+    function quick_bresenham2(fx,fy,tx,ty,ctx,color){
+        var sy = 1;
+        var sx = 1;
+        var dx = tx-fx;
+         if (dx<0) {
+             dx=-dx;
+             sx = -1;
+         }
+         var dy = ty-fy;
+         if (dy<0) {
+             dy=-dy;
+             sy = -1;
+         }
+        var pixel = putPixel;
+
+        if (dx<dy){
+            var tmp;
+            tmp = tx;
+            tx = ty;
+            ty = tmp;
+            tmp = dx;
+            dx = dy;
+            dy = tmp;
+            tmp = fx;
+            fx = fy;
+            fy = tmp;
+            tmp = sx;
+            sx = sy;
+            sy = tmp;
+            pixel = putPixelR;
+        }
+        pixel(ctx,fx,fy,color);
+        var n = -(dx<<1);
+        var e = dy<<1;
+        var d = e-dx;
+        while (fx!=tx){
+            if (d>=0) {
+                fy+=sy;
+                d+=n;
+            }
+            d+=e;
+            fx+=sx;
+            pixel(ctx,fx,fy,color);
+        }
+    }
+
     function quick_bresenham(from,to,ctx,color){
         var dx = Math.abs(to.x-from.x);
         var dy = Math.abs(to.y-from.y);
@@ -244,7 +288,7 @@ app.algorithms = (function(){
     }
 
     return {
-        drawBresenhamLine : quick_bresenham,
+        drawBresenhamLine : quick_bresenham2,
         aaLine : aa_wu_line,
         fillPolygon : scan_line
     }
