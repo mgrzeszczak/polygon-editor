@@ -42,6 +42,7 @@ var app = (function(){
     function drawLoop(){
         var i,len;
         // FPS
+
         /*
         if (Date.now() - app.lastDate > 1000) {
             console.log(app.framesCount + ' ' + (Date.now()-app.lastDate));
@@ -55,19 +56,19 @@ var app = (function(){
         ctx.clearRect(0,0,canvas.width,canvas.height);
         var tmp = ctx;
         ctx = memCtx;
-        ctx.data.fill(0);
+        ctx.data.fill(0xffffffff);
 
         var v1 = {x:0,y:0};
         var v2 = {x:1800,y:1000};
 
-        for (i=0;i<1000;i++){
-            app.algorithms.drawBresenhamLine(v1.x,v1.y,v2.x,v2.y,ctx,255<<24);
-        }
+        //for (i=0;i<2500;i++){
+        //    app.algorithms.drawBresenhamLine(v1.x,v1.y,v2.x,v2.y,ctx,255<<24);
+        //}
 
-        /*
+
         for(i=0,len=objects.length;i<len;i++){
             objects[i].draw(ctx);
-        }*/
+        }
 
         /*
         ctx.relationImgs = [];

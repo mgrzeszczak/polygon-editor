@@ -42,18 +42,21 @@ app.algorithms = (function(){
             var y = yMin;
 
         var i;
-        var colorBlack = {r:0,g:0,b:0,a:255};
+        var black = 255<<24;
         while (y!=yMax){
             if (et[y]!=undefined)
                 aet = aet.concat(et[y]);
 
-            aet.sort(function(a,b){return a.xMin<b.xMin});
+            aet.sort(function(a,b){return a.xMin<=b.xMin});
 
             for (i=0;i<aet.length-1;i+=2){
                 var a = aet[i];
                 var b = aet[i+1];
 
-                quick_bresenham({x:Math.floor(a.xMin),y:y},{x:Math.floor(b.xMin),y:y},ctx,colorBlack);
+                //if (a.xMin == b.xMin)
+                    //console.log(a.xMin +' '+b.xMin);
+
+                quick_bresenham({x:Math.floor(a.xMin),y:y},{x:Math.floor(b.xMin),y:y},ctx,black);
             }
 
             for (i=aet.length-1;i>=0;i--){

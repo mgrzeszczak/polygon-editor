@@ -6,7 +6,7 @@ app.objects.edge = function(from,to){
     this.draw = function(ctx){
         var self = this;
         //app.algorithms.aaLine(this.from,this.to,ctx,this.cloned==true? this.color : self.relation.getColor().hex);
-        app.algorithms.drawBresenhamLine(this.from.x,this.from.y,this.to.x,this.to.y,ctx,self.relation.getColor().rgba);
+        app.algorithms.drawBresenhamLine(this.from.x,this.from.y,this.to.x,this.to.y,ctx,255<<24);//self.relation.getColor().rgba);
         //app.algorithms.drawBresenhamLine(this.from,this.to,ctx,this.cloned==true? this.color : self.relation.getColor().rgba);
         /*if (this.relation.type!=app.relations.NULL)
             ctx.relationImgs.push({pos:{x:(this.from.x+this.to.x)/2,y:(this.from.y+this.to.y)/2},
