@@ -31,6 +31,25 @@ app.callbacks = (function(){
                 break;
             case "Escape":
                 if (app.mode.getMode()==app.modes.CREATE) app.finishPoly();
+                break;
+            case "ArrowLeft":
+                app.lx -=10;
+                break;
+            case "ArrowRight":
+                app.lx +=10;
+                break;
+            case "ArrowUp":
+                app.ly -=10;
+                break;
+            case "ArrowDown":
+                app.ly +=10;
+                break;
+            case "Shift":
+                app.lz +=10;
+                break;
+            case "Control":
+                app.lz -=10;
+                break;
         }
     }
 

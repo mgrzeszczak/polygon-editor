@@ -9,6 +9,14 @@ var app = (function(){
     var memCanvas;
     var memCtx;
 
+    var texture;
+    var texCanvas;
+    var texCtx;
+
+    var hmap;
+    var hCanvas;
+    var hCtx;
+
     function initialize(){
         registerCallbacks();
         app.callbacks.onResize();
@@ -19,6 +27,39 @@ var app = (function(){
 
         app.mwidth = 1920;
         app.mheight= 1080;
+
+        app.lx = window.innerWidth/2;
+        app.ly = window.innerHeight/2;
+        app.lz = 10;
+
+        texture = new Image();
+        texture.src = 'resources/images/wood.jpg';
+        texture.onload=function(){
+            texCanvas = document.createElement('canvas');
+            texCtx = texCanvas.getContext('2d');
+            texCanvas.width = texture.width;
+            texCanvas.height = texture.height;
+            texCtx.drawImage(texture,0,0);
+            app.texture = texCtx.getImageData(0,0,texCanvas.width,texCanvas.height).data;
+            app.texWidth = texCanvas.width;
+            app.texHeight = texCanvas.height;
+        };
+
+        hmap = new Image();
+        hmap.src = 'resources/images/bumpwood2.jpg';
+        hmap.onload = function(){
+            hCanvas = document.createElement('canvas');
+            hCanvas.width = this.width;
+            hCanvas.height = this.height;
+            hCtx = hCanvas.getContext('2d');
+            hCtx.drawImage(this,0,0);
+
+            processHeightMap(hCtx.getImageData(0,0,hCanvas.width,hCanvas.height).data,hCanvas.width,hCanvas.height);
+
+            //app.hmap = hCtx.getImageData(0,0,hCanvas.width,hCanvas.height).data;
+            //app.hwidth = hCanvas.width;
+            //app.hheight = hCanvas.height;
+        };
 
         memCanvas = document.createElement('canvas');
         memCanvas.width = app.mwidth;
@@ -32,6 +73,40 @@ var app = (function(){
         requestAnimationFrame(drawLoop);
     }
 
+    function processHeightMap(hmap,width,height){
+        var buffer = new ArrayBuffer(3*Float32Array.BYTES_PER_ELEMENT*width*height);
+        var data = new Float32Array(buffer);
+        for (var i=0;i<width;i++){
+            for (var j=0;j<height;j++){
+                var tx = i;
+                var ty = j;
+                var sx = hmap[4*(tx<width-1?tx+1:tx)+4*ty*width] - hmap[(tx==0? tx : tx-1)*4 + 4*ty*width];
+                if (tx == 0 || tx == width-1)
+                    sx *= 2;
+
+                var sy = hmap[4*tx+4*width*(ty<height-1?ty+1:ty)] - hmap[4*tx+4*width*(ty==0?ty:ty-1)];
+                if (ty == 0 || ty == height -1)
+                    sy *= 2;
+                var hmapNormalX = -sx/255;
+                var hmapNormalY = -sy/255;
+                var hmapNormalZ = 2;
+
+                inv = 1/Math.sqrt(hmapNormalX*hmapNormalX+hmapNormalY*hmapNormalY+hmapNormalZ*hmapNormalZ);
+                hmapNormalX*=inv;
+                hmapNormalY*=inv;
+                hmapNormalZ*=inv;
+
+
+                data[3*i+3*j*width] = hmapNormalX;
+                data[3*i+3*j*width+1] = hmapNormalY;
+                data[3*i+3*j*width+2] = hmapNormalZ;
+            }
+        }
+        app.hMap = data;
+        app.hMapWidth = width;
+        app.hMapHeight= height;
+    }
+
     function registerCallbacks(){
         window.addEventListener('resize', app.callbacks.onResize);
         app.content.canvas.addEventListener('mousedown',app.callbacks.onMouseDown,true);
@@ -40,10 +115,9 @@ var app = (function(){
     }
 
     function drawLoop(){
+
         var i,len;
         // FPS
-
-        /*
         if (Date.now() - app.lastDate > 1000) {
             console.log(app.framesCount + ' ' + (Date.now()-app.lastDate));
             app.lastDate = Date.now();
@@ -51,7 +125,7 @@ var app = (function(){
         }
         else {
             app.framesCount++;
-        }*/
+        }
         //ctx.clearData();
         ctx.clearRect(0,0,canvas.width,canvas.height);
         var tmp = ctx;
@@ -61,9 +135,10 @@ var app = (function(){
         var v1 = {x:0,y:0};
         var v2 = {x:1800,y:1000};
 
-        //for (i=0;i<2500;i++){
-        //    app.algorithms.drawBresenhamLine(v1.x,v1.y,v2.x,v2.y,ctx,255<<24);
-        //}
+        /*
+        for (i=0;i<2500;i++){
+            app.algorithms.drawBresenhamLine(v1.x,v1.y,v2.x,v2.y,ctx,255<<24);
+        }*/
 
 
         for(i=0,len=objects.length;i<len;i++){

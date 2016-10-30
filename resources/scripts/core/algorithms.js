@@ -1,10 +1,102 @@
 app.algorithms = (function(){
 
+    var lightColor = 0xffffffff;
+
     function putPixel(ctx,x,y,c){
-        ctx.data[x+y*app.mwidth] = c;
+        ctx.data[x+y*app.mwidth] = calculateColor(x,y,app.lx,app.ly,app.lz,lightColor,0);
     }
+
     function putPixelR(ctx,x,y,c){
-        ctx.data[x*app.mwidth+y] = c;
+        ctx.data[x*app.mwidth+y] = calculateColor(y,x,app.lx,app.ly,app.lz,lightColor,0);
+    }
+
+    var buf = new ArrayBuffer(Float32Array.BYTES_PER_ELEMENT);
+    var fv = new Float32Array(buf);
+    var lv = new Uint32Array(buf);
+    var threehalfs = 1.5;
+
+    function invsqrt(number) {
+        var x2 = number * 0.5;
+        fv[0] = number;
+        lv[0] = 0x5f3759df - ( lv[0] >> 1 );
+        var y = fv[0];
+        y = y * ( threehalfs - ( x2 * y * y ) );
+        return y;
+    }
+
+    function calculateColor(x,y,lx,ly,lz,lc,oc){
+        // calculate vector to light
+        var dx = lx-x;
+        var dy = ly-y;
+        var dz = lz;
+        // normalize vector to light
+        var inv = 1/Math.sqrt(dx*dx+dy*dy+dz*dz);
+        dx*=inv;
+        dy*=inv;
+        dz*=inv;
+        // calculate object's normal vector
+        var ox = 0;
+        var oy = 0;
+        var oz = 1;
+        // normalize it
+        inv = 1/Math.sqrt(ox*ox+oy*oy+oz*oz);
+        ox*=inv;
+        oy*=inv;
+        oz*=inv;
+        // calcualte normalized position on the canvas
+        var nx = x/window.innerWidth;
+        var ny = y/window.innerHeight;
+        // calcualte position on the bump map
+        var hx = Math.floor(nx*app.hMapWidth);
+        var hy = Math.floor(ny*app.hMapHeight);
+        // get bump map normal vector
+        var hmapNormalX = app.hMap[3*hx+3*hy*app.hMapWidth];
+        var hmapNormalY = app.hMap[3*hx+3*hy*app.hMapWidth+1];
+        var hmapNormalZ = app.hMap[3*hx+3*hy*app.hMapWidth+2];
+
+
+        /*
+        var sx = app.hmap[4*(tx<app.hwidth-1?tx+1:tx)+4*ty*app.hwidth] - app.hmap[(tx==0? tx : tx-1)*4 + 4*ty*app.hwidth];
+        if (tx == 0 || tx == app.hwidth-1)
+            sx *= 2;
+        var sy = app.hmap[4*tx+4*app.hwidth*(ty<app.hheight-1?ty+1:ty)] - app.hmap[4*tx+4*app.hwidth*(ty==0?ty:ty-1)];
+        if (ty == 0 || ty == app.hheight -1)
+            sy *= 2;
+        hmapNormalX = -sx/255;
+        hmapNormalY = -sy/255;
+        hmapNormalZ = 2;
+        inv = 1/Math.sqrt(hmapNormalX*hmapNormalX+hmapNormalY*hmapNormalY+hmapNormalZ*hmapNormalZ);//invsqrt(ox*ox+oy*oy+oz*oz);
+        hmapNormalX*=inv;
+        hmapNormalY*=inv;
+        hmapNormalZ*=inv;
+        //normal[y*width+x].set(-sx*yScale, 2*xzScale, sy*yScale);
+         */
+
+        // add bump map's normal vector to object's normal vector and normalize the result
+        ox += hmapNormalX;
+        oy += hmapNormalY;
+        oz += hmapNormalZ;
+        inv = 1/Math.sqrt(ox*ox+oy*oy+oz*oz);//invsqrt(ox*ox+oy*oy+oz*oz);
+        ox*=inv;
+        oy*=inv;
+        oz*=inv;
+        // calculate the cosine between normal vector and vector to the light
+        // it is equal to the dot product of the aforementioned vectors
+        var cos = dx*ox+dy*oy+dz*oz;
+        if (cos<0) cos =0 ;
+        // calculate the coordinates on the texture
+        var tx = x%app.texWidth;
+        var ty = y%app.texHeight;
+        // get texture colors
+        var r = app.texture[4*tx+4*ty*app.texWidth]/255;
+        var g = app.texture[4*tx+4*ty*app.texWidth+1]/255;
+        var b = app.texture[4*tx+4*ty*app.texWidth+2]/255;
+        // calculate light color components
+        var lr = (lc&255)/255;
+        var lg = ((lc&(255<<8))>>8)/255;
+        var lb = ((lc&(255<<16))>>16)/255;
+        // calculate the reflected light color
+        return 255<<24 | (b*lb*cos*255)<<16 | (g*lg*cos*255)<<8 | (cos*r*lr*255);
     }
 
     function scan_line(ctx,polygon){
@@ -47,7 +139,7 @@ app.algorithms = (function(){
             if (et[y]!=undefined)
                 aet = aet.concat(et[y]);
 
-            aet.sort(function(a,b){return a.xMin<=b.xMin});
+            aet.sort(function(a,b){return a.xMin>b.xMin});
 
             for (i=0;i<aet.length-1;i+=2){
                 var a = aet[i];
