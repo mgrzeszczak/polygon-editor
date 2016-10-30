@@ -3,11 +3,11 @@ app.algorithms = (function(){
     var lightColor = 0xffffffff;
 
     function putPixel(ctx,x,y,c){
-        ctx.data[x+y*app.mwidth] = calculateColor(x,y,app.lx,app.ly,app.lz,lightColor,0);
+        ctx.data[x+y*app.mwidth] = calculateColor(x,y,app.lx,app.ly,app.lz,lightColor);
     }
 
     function putPixelR(ctx,x,y,c){
-        ctx.data[x*app.mwidth+y] = calculateColor(y,x,app.lx,app.ly,app.lz,lightColor,0);
+        ctx.data[x*app.mwidth+y] = calculateColor(y,x,app.lx,app.ly,app.lz,lightColor);
     }
 
     var buf = new ArrayBuffer(Float32Array.BYTES_PER_ELEMENT);
@@ -24,7 +24,8 @@ app.algorithms = (function(){
         return y;
     }
 
-    function calculateColor(x,y,lx,ly,lz,lc,oc){
+
+    function calculateColor(x,y,lx,ly,lz,lc){
         // calculate vector to light
         var dx = lx-x;
         var dy = ly-y;
@@ -35,15 +36,16 @@ app.algorithms = (function(){
         dy*=inv;
         dz*=inv;
         // calculate object's normal vector
-        var ox = 0;
-        var oy = 0;
-        var oz = 1;
+
+        var ox = ((x<window.innerWidth/2?-1:1)*Math.abs(x-window.innerWidth/2));
+        var oy = ((y<window.innerHeight/2? -1:1)*Math.abs(y-window.innerHeight/2));
+        var oz = window.innerWidth;
         // normalize it
         inv = 1/Math.sqrt(ox*ox+oy*oy+oz*oz);
         ox*=inv;
         oy*=inv;
         oz*=inv;
-        // calcualte normalized position on the canvas
+        // calculate normalized position on the canvas
         var nx = x/window.innerWidth;
         var ny = y/window.innerHeight;
         // calcualte position on the bump map
@@ -53,25 +55,6 @@ app.algorithms = (function(){
         var hmapNormalX = app.hMap[3*hx+3*hy*app.hMapWidth];
         var hmapNormalY = app.hMap[3*hx+3*hy*app.hMapWidth+1];
         var hmapNormalZ = app.hMap[3*hx+3*hy*app.hMapWidth+2];
-
-
-        /*
-        var sx = app.hmap[4*(tx<app.hwidth-1?tx+1:tx)+4*ty*app.hwidth] - app.hmap[(tx==0? tx : tx-1)*4 + 4*ty*app.hwidth];
-        if (tx == 0 || tx == app.hwidth-1)
-            sx *= 2;
-        var sy = app.hmap[4*tx+4*app.hwidth*(ty<app.hheight-1?ty+1:ty)] - app.hmap[4*tx+4*app.hwidth*(ty==0?ty:ty-1)];
-        if (ty == 0 || ty == app.hheight -1)
-            sy *= 2;
-        hmapNormalX = -sx/255;
-        hmapNormalY = -sy/255;
-        hmapNormalZ = 2;
-        inv = 1/Math.sqrt(hmapNormalX*hmapNormalX+hmapNormalY*hmapNormalY+hmapNormalZ*hmapNormalZ);//invsqrt(ox*ox+oy*oy+oz*oz);
-        hmapNormalX*=inv;
-        hmapNormalY*=inv;
-        hmapNormalZ*=inv;
-        //normal[y*width+x].set(-sx*yScale, 2*xzScale, sy*yScale);
-         */
-
         // add bump map's normal vector to object's normal vector and normalize the result
         ox += hmapNormalX;
         oy += hmapNormalY;
@@ -88,15 +71,17 @@ app.algorithms = (function(){
         var tx = x%app.texWidth;
         var ty = y%app.texHeight;
         // get texture colors
-        var r = app.texture[4*tx+4*ty*app.texWidth]/255;
-        var g = app.texture[4*tx+4*ty*app.texWidth+1]/255;
-        var b = app.texture[4*tx+4*ty*app.texWidth+2]/255;
+        var value = app.texture[tx+ty*app.texWidth];
+        var r = (value&255);//app.texture[4*tx+4*ty*app.texWidth]/255;
+        var g = ((value&(255<<8))>>8);//app.texture[4*tx+4*ty*app.texWidth+1]/255;
+        var b = ((value&(255<<16))>>16);//app.texture[4*tx+4*ty*app.texWidth+2]/255;
         // calculate light color components
         var lr = (lc&255)/255;
         var lg = ((lc&(255<<8))>>8)/255;
         var lb = ((lc&(255<<16))>>16)/255;
         // calculate the reflected light color
-        return 255<<24 | (b*lb*cos*255)<<16 | (g*lg*cos*255)<<8 | (cos*r*lr*255);
+
+        return 255<<24 | (b*lb*cos)<<16 | (g*lg*cos)<<8 | (cos*r*lr);
     }
 
     function scan_line(ctx,polygon){
@@ -110,8 +95,6 @@ app.algorithms = (function(){
             edges.forEach(function(edge){
                 var from = edge.from;
                 var to = edge.to;
-
-                //if (from.y==to.y) return;
 
                 if (to.y<from.y) {
                     var tmp = from;
@@ -139,26 +122,232 @@ app.algorithms = (function(){
             if (et[y]!=undefined)
                 aet = aet.concat(et[y]);
 
-            aet.sort(function(a,b){return a.xMin>b.xMin});
+            aet.sort(function(a,b){return a.xMin<b.xMin});
 
             for (i=0;i<aet.length-1;i+=2){
                 var a = aet[i];
                 var b = aet[i+1];
-
-                //if (a.xMin == b.xMin)
-                    //console.log(a.xMin +' '+b.xMin);
-
                 quick_bresenham({x:Math.floor(a.xMin),y:y},{x:Math.floor(b.xMin),y:y},ctx,black);
             }
 
+            var arr = [];
             for (i=aet.length-1;i>=0;i--){
                 if (aet[i].yMax==y) aet.splice(i,1);
+                else if (aet[i].yMax==y+1) arr.push(aet[i]);
             }
+            aet = aet.concat(arr);
             y++;
             aet.forEach(function(s){
                s.xMin+=s.step;
             });
         }
+    }
+
+    function findIntersection(e1,e2){
+        // e1.from = p
+        // e2.from = q
+        var p = new app.objects.vec2d(e1.from.x,e1.from.y);
+        var q = new app.objects.vec2d(e2.from.x,e2.from.y);
+
+        // e1.to = p+r
+        // e2.to = q+s
+        var r = new app.objects.vec2d(e1.to.x-p.x,e1.to.y-p.y);
+        var s = new app.objects.vec2d(e2.to.x-q.x,e2.to.y-q.y);
+
+        //u = (q − p) × r / (r × s)
+        //t = (q − p) × s / (r × s)
+        var rxs = r.cross(s);
+        var qpxr = (q.add(p.reverse())).cross(r);
+
+        //If r × s = 0 and (q − p) × r = 0, then the two lines are collinear.
+        if (rxs==0 && qpxr==0){
+            // colinear
+            return { status:true };
+        }
+        //If r × s = 0 and (q − p) × r ≠ 0, then the two lines are parallel
+        if (rxs==0 && qpxr!=0){
+            // parallel
+            return { status:false };
+        }
+        var u = qpxr/rxs;
+        var t = (q.add(p.reverse())).cross(s)/rxs;
+        //If r × s ≠ 0 and 0 ≤ t ≤ 1 and 0 ≤ u ≤ 1, the two line segments meet at the point p + t r = q + u s
+        if (rxs!=0 && t>=0 && t<=1 && u>=0 && u<=1){
+            return { status:true, v:app.factory.createVertex(p.x+t*r.x,p.y+t*r.y) };
+        }
+        // else not parallel but not intersecting
+        return {status:false};
+    }
+
+    function checkPolygonIntersections(poly){
+        var edges = poly.edges;
+        var count =0;
+        for (var i=0,len=edges.length;i<len;i++){
+            for (var j=i+1;j<len;j++){
+                var ret = findIntersection(edges[i],edges[j]);
+                if (ret.status==true){
+                    count+=1;
+                    //console.log(ret.v);
+                }
+            }
+        }
+        //console.log(count);
+        return count==poly.vertices.length;
+    }
+
+    app.node = function(v,next){
+        this.v = v;
+        this.next = next;
+    };
+
+    function clipPolygons(polyA, polyB){
+        // make sure polygons do not intersect themselves
+        if (!checkPolygonIntersections(polyA)
+        || !checkPolygonIntersections(polyB)) alert('One or more polygons are invalid');
+
+        // check is clockwise both;
+        // if not reverse order
+        // todo: add checking and enforcing clockwise order
+
+
+        // create one way lists for vertices of each polygon
+        // with dictionaries that allow const time retrieval of any vertex in the list
+        var dictA = {};
+        var headA = new app.node(polyA.vertices[0]);
+        var prev = headA;
+        dictA[prev.v.x+prev.v.y<<11]=prev;
+        for (var i =1;i<polyA.vertices.length;i++){
+            prev.next = new app.node(polyA.vertices[i]);
+            prev = prev.next;
+            dictA[prev.v.x+prev.v.y<<11]=prev;
+        }
+        prev.next = headA;
+
+        var dictB = {};
+        var headB = new app.node(polyB.vertices[0]);
+        prev = headB;
+        dictB[prev.v.x+prev.v.y<<11]=prev;
+        for (var i =1;i<polyB.vertices.length;i++){
+            prev.next = new app.node(polyB.vertices[i]);
+            prev = prev.next;
+            dictB[prev.v.x+prev.v.y<<11]=prev;
+        }
+        prev.next = headB;
+
+        // find all intersection points
+        var intersections = {}; // edge -> intersection point list dict
+        var inside = false;
+
+        var entrancePoints = [];
+        for (var i=0,len=polyA.edges.length;i<len;i++){
+            var e = polyA.edges[i];
+            console.log('i '+i);
+            for (var j=0,len2=polyB.edges.length;j<len2;j++){
+                var ret = findIntersection(e,polyB.edges[j]);
+                console.log('j '+j);
+                if (ret.status==true) {
+                    console.log(e.id+" with "+polyB.edges[j].id);
+                    if (intersections[e.id]==undefined){
+                        intersections[e.id]=[];
+                    }
+                    intersections[e.id].push(ret.v);
+                    if (intersections[polyB.edges[j].id] == undefined){
+                        intersections[polyB.edges[j].id] = [];
+                    }
+                    intersections[polyB.edges[j].id].push(ret.v);
+                }
+            }
+            console.log(intersections[e.id]);
+
+            if (intersections[e.id]==undefined) continue;
+            var intersectionPoints = intersections[e.id];
+            intersectionPoints.sort(function(a,b){
+                if (e.from.x==e.to.x) return e.from.y<e.to.y?a.y-b.y : b.y-a.y;
+                return e.from.x<e.to.x ? a.x-b.x : b.x-a.x;
+            });
+
+            for (var k=0;k<intersectionPoints.length;k++){
+                intersectionPoints[k].entrance = !inside;
+                if (!inside == true) entrancePoints.push(intersectionPoints[k]);
+                inside = !inside;
+            }
+        }
+
+        console.log(intersections);
+        //return;
+
+        // add intersection points to lists
+        for (var i=0,len=polyA.edges.length;i<len;i++){
+            var e = polyA.edges[i];
+            var intersectionPoints = intersections[e.id];
+            if (intersectionPoints==undefined) continue;
+
+            var from = e.from;
+            var node = dictA[from.x+from.y<<11];
+            var last = node.next;
+            var prev = node;
+
+            for (var j=0;j<intersectionPoints.length;j++){
+                var v = intersectionPoints[j];
+                prev.next = new app.node(v);
+                prev = prev.next;
+                dictA[v.x+v.y<<11]=prev;
+            }
+            prev.next = last;
+        }
+        for (var i=0,len=polyB.edges.length;i<len;i++){
+            var e = polyB.edges[i];
+            var intersectionPoints = intersections[e.id];
+
+            if (intersectionPoints == undefined) continue;
+            intersectionPoints.sort(function(a,b){
+                if (e.from.x==e.to.x) return e.from.y<e.to.y?a.y-b.y : b.y-a.y;
+                return e.from.x<e.to.x ? a.x-b.x : b.x-a.x;
+            });
+            var from = e.from;
+            var node = dictB[from.x+from.y<<11];
+            var last = node.next;
+            var prev = node;
+
+            for (var j=0;j<intersectionPoints.length;j++){
+                var v = intersectionPoints[j];
+                prev.next = new app.node(v);
+                prev = prev.next;
+                dictB[v.x+v.y<<11]=prev;
+            }
+            prev.next = last;
+        }
+
+
+        for (var i=0;i<entrancePoints.length;i++){
+            entrancePoints[i].visited = false;
+        }
+
+
+        var rects = [];
+        for (var i=0;i<entrancePoints.length;i++){
+            if (entrancePoints[i].visited==true) continue;
+            var rect = [];
+            var p = entrancePoints[i];
+            rect.push(p);
+            var head = dictA[p.x+p.y<<11];
+            var node = head;
+            while (node.v.entrance!=false){
+                node = node.next;
+                node.v.visited = true;
+                rect.push(node.v);
+            }
+            node = dictB[node.v.x+node.v.y<<11];
+            node = node.next;
+            while (node.v.id!=head.v.id){
+                node.v.visited = true;
+                rect.push(node.v);
+                node = node.next;
+            }
+            rects.push(rect);
+        }
+
+        console.log(rects);
     }
 
     function aa_wu_line(from,to,ctx,color){
@@ -200,37 +389,6 @@ app.algorithms = (function(){
         }
         ctx.globalAlpha = 1;
     }
-
-/*
-    void SymmetricLine(int x1, int y1, int x2, int y2)
-    {
-        int dx = x2 - x1;
-        int dy = y2 - y1;
-        int incrE = 2*dy;
-        int incrNE = 2*(dy - dx);
-        int d = 2*dy - dx;
-        int xf=x1;
-        int yf=y1;
-        int xb=x2;
-        int yb=y2;
-        putpixel(xf,yf);
-        putpixel(xb,yb);
-        while (xf<xb)
-        {
-            xf++;
-            xb--;
-            if (d<0) //Choose E and W
-                d+=incrE;
-            else //Choose NE and SW
-            {
-                d+=incrNE;
-                yf++;
-                yb--;
-            }
-            putpixel(xf,yf);
-            putpixel(xb,yb);
-        }
-    }*/
 
     function symmetric_bresenham(from,to,ctx,color){
         var dx = Math.abs(to.x-from.x);
@@ -385,6 +543,7 @@ app.algorithms = (function(){
     return {
         drawBresenhamLine : quick_bresenham2,
         aaLine : aa_wu_line,
-        fillPolygon : scan_line
+        fillPolygon : scan_line,
+        weilerAtherton : clipPolygons
     }
 })();

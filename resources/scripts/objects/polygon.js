@@ -17,8 +17,8 @@ app.objects.polygon = function(){
         var i,len;
         for (i=0,len=this.edges.length;i<len;i++) this.edges[i].draw(ctx);
 
-        if (this.closed)
-            app.algorithms.fillPolygon(ctx,this);
+        //if (this.closed)
+         //   app.algorithms.fillPolygon(ctx,this);
     };
 
     this.addVertex = function(vertex){

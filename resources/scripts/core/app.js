@@ -40,9 +40,18 @@ var app = (function(){
             texCanvas.width = texture.width;
             texCanvas.height = texture.height;
             texCtx.drawImage(texture,0,0);
+
             app.texture = texCtx.getImageData(0,0,texCanvas.width,texCanvas.height).data;
+
             app.texWidth = texCanvas.width;
             app.texHeight = texCanvas.height;
+
+            var buf = new ArrayBuffer(app.texture.length);
+            var data8 = new Uint8Array(buf);
+            var data = new Uint32Array(buf);
+            data8.set(app.texture);
+
+            app.texture = data;
         };
 
         hmap = new Image();
@@ -53,12 +62,7 @@ var app = (function(){
             hCanvas.height = this.height;
             hCtx = hCanvas.getContext('2d');
             hCtx.drawImage(this,0,0);
-
             processHeightMap(hCtx.getImageData(0,0,hCanvas.width,hCanvas.height).data,hCanvas.width,hCanvas.height);
-
-            //app.hmap = hCtx.getImageData(0,0,hCanvas.width,hCanvas.height).data;
-            //app.hwidth = hCanvas.width;
-            //app.hheight = hCanvas.height;
         };
 
         memCanvas = document.createElement('canvas');
@@ -69,6 +73,13 @@ var app = (function(){
         memCtx.buf = new ArrayBuffer(memCtx.pixelArray.data.length);
         memCtx.buf8 = new Uint8ClampedArray(memCtx.buf);
         memCtx.data = new Uint32Array(memCtx.buf);
+
+        /*
+        pushVertex(app.factory.createVertex(0,0));
+        pushVertex(app.factory.createVertex(0,window.innerHeight));
+        pushVertex(app.factory.createVertex(window.innerWidth,window.innerHeight));
+        pushVertex(app.factory.createVertex(window.innerWidth,0));
+        finishPoly();*/
 
         requestAnimationFrame(drawLoop);
     }
@@ -118,14 +129,14 @@ var app = (function(){
 
         var i,len;
         // FPS
-        if (Date.now() - app.lastDate > 1000) {
+        /*if (Date.now() - app.lastDate > 1000) {
             console.log(app.framesCount + ' ' + (Date.now()-app.lastDate));
             app.lastDate = Date.now();
             app.framesCount = 1;
         }
         else {
             app.framesCount++;
-        }
+        }*/
         //ctx.clearData();
         ctx.clearRect(0,0,canvas.width,canvas.height);
         var tmp = ctx;
@@ -338,6 +349,10 @@ var app = (function(){
 		
 		setGhostCopy : function(obj){
             ghostCopy=obj;
+        },
+
+        getPolys : function(){
+            return objects;
         }
     };
 
