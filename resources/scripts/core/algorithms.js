@@ -173,7 +173,7 @@ app.algorithms = (function(){
         var t = (q.add(p.reverse())).cross(s)/rxs;
         //If r × s ≠ 0 and 0 ≤ t ≤ 1 and 0 ≤ u ≤ 1, the two line segments meet at the point p + t r = q + u s
         if (rxs!=0 && t>=0 && t<=1 && u>=0 && u<=1){
-            return { status:true, v:app.factory.createVertex(p.x+t*r.x,p.y+t*r.y) };
+            return { status:true, v:app.factory.createVertex(Math.floor(p.x+t*r.x),Math.floor(p.y+t*r.y)) };
         }
         // else not parallel but not intersecting
         return {status:false};
@@ -203,11 +203,54 @@ app.algorithms = (function(){
     function clipPolygons(polyA, polyB){
         // make sure polygons do not intersect themselves
         if (!checkPolygonIntersections(polyA)
-        || !checkPolygonIntersections(polyB)) alert('One or more polygons are invalid');
+        || !checkPolygonIntersections(polyB)) {
+            alert('One or more polygons are invalid');
+            return;
+        }
+
+        app.removePoly(polyA);
+        app.removePoly(polyB);
 
         // check is clockwise both;
         // if not reverse order
         // todo: add checking and enforcing clockwise order
+        var sum = 0;
+        polyA.edges.forEach(function(e){
+           sum += (e.to.x-e.from.x)/(e.to.y+e.from.y);
+        });
+        if (sum>=0) {
+            var vertices = polyA.vertices;
+            poly = new app.factory.createPolygon();
+            for (var i=vertices.length-1;i>=0;i--){
+                poly.addVertex(vertices[i]);
+            }
+            poly.close();
+            polyA = poly;
+        }
+
+        sum = 0;
+        polyB.edges.forEach(function(e){
+            sum += (e.to.x-e.from.x)/(e.to.y+e.from.y);
+        });
+        if (sum>=0) {
+            var vertices = polyB.vertices;
+            var poly = new app.factory.createPolygon();
+            for (var i=vertices.length-1;i>=0;i--){
+                poly.addVertex(vertices[i]);
+            }
+            poly.close();
+            polyB = poly;
+        }
+
+
+
+
+        /*point[0] = (5,0)   edge[0]: (6-5)(4+0) =   4
+        point[1] = (6,4)   edge[1]: (4-6)(5+4) = -18
+        point[2] = (4,5)   edge[2]: (1-4)(5+5) = -30
+        point[3] = (1,5)   edge[3]: (1-1)(0+5) =   0
+        point[4] = (1,0)   edge[4]: (5-1)(0+0) =   0*/
+        // if area negative -> clockwise
 
 
         // create one way lists for vertices of each polygon
@@ -241,12 +284,12 @@ app.algorithms = (function(){
         var entrancePoints = [];
         for (var i=0,len=polyA.edges.length;i<len;i++){
             var e = polyA.edges[i];
-            console.log('i '+i);
+            //console.log('i '+i);
             for (var j=0,len2=polyB.edges.length;j<len2;j++){
                 var ret = findIntersection(e,polyB.edges[j]);
-                console.log('j '+j);
+                //console.log('j '+j);
                 if (ret.status==true) {
-                    console.log(e.id+" with "+polyB.edges[j].id);
+                    //console.log(e.id+" with "+polyB.edges[j].id);
                     if (intersections[e.id]==undefined){
                         intersections[e.id]=[];
                     }
@@ -257,7 +300,7 @@ app.algorithms = (function(){
                     intersections[polyB.edges[j].id].push(ret.v);
                 }
             }
-            console.log(intersections[e.id]);
+            //console.log(intersections[e.id]);
 
             if (intersections[e.id]==undefined) continue;
             var intersectionPoints = intersections[e.id];
@@ -327,7 +370,27 @@ app.algorithms = (function(){
         var rects = [];
         for (var i=0;i<entrancePoints.length;i++){
             if (entrancePoints[i].visited==true) continue;
+
+            var firstEntrancePoint = entrancePoints[i];
+            firstEntrancePoint.visited = true;
             var rect = [];
+
+            // go within this polygon until exit point
+            // switch polygons
+            // on return to the first entrance point, stop
+            rect.push(firstEntrancePoint);
+            var node = dictA[firstEntrancePoint.x+firstEntrancePoint.y<<11];
+            node = node.next;
+
+            while (node.v.id!=firstEntrancePoint.id){
+                node.v.visited = true;
+                rect.push(node.v.clone());
+                if (node.v.entrance==false) node = dictB[node.v.x+node.v.y<<11];
+                else if (node.v.entrance == true) node = dictA[node.v.x+node.v.y<<11];
+                node = node.next;
+            }
+
+            /*
             var p = entrancePoints[i];
             rect.push(p);
             var head = dictA[p.x+p.y<<11];
@@ -341,11 +404,27 @@ app.algorithms = (function(){
             node = node.next;
             while (node.v.id!=head.v.id){
                 node.v.visited = true;
-                rect.push(node.v);
+                rect.push(node.v.clone());
                 node = node.next;
-            }
+            }*/
+
+
             rects.push(rect);
         }
+
+        rects.forEach(function(r){
+            if (r.length<3) return;
+            var polygon = new app.factory.createPolygon();
+            r.forEach(function(v){
+                v.x = Math.floor(v.x);
+                v.y = Math.floor(v.y);
+                polygon.addVertex(v);
+            });
+            polygon.close();
+            console.log('Adding polygon: ');
+            console.log(polygon);
+            app.addPoly(polygon);
+        });
 
         console.log(rects);
     }

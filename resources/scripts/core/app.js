@@ -199,6 +199,12 @@ var app = (function(){
         objects.splice(objects.indexOf(poly),1);
     }
 
+    function addPoly(poly){
+        console.log('Adding: ');
+        console.log(poly);
+        objects.unshift(poly);
+    }
+
     function enterEditMode(){
         objects.forEach(function(obj){
             obj.imgs = [];
@@ -338,6 +344,7 @@ var app = (function(){
         pushVertex : pushVertex,
         finishPoly : finishPoly,
         removePoly : removePoly,
+        addPoly : addPoly,
 
         enterEditMode : enterEditMode,
         enterCreateMode : enterCreateMode,
