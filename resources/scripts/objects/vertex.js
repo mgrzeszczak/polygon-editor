@@ -17,5 +17,7 @@ app.objects.vertex = function(x,y){
         edges.forEach(function(edge){
             edge.relation.apply(edge,self);
         });
+
+        //if (this.polygon!=undefined) this.polygon.lines = app.algorithms.fillPolygon(null,this.polygon);
     };
 };

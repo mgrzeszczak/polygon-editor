@@ -1,13 +1,25 @@
 app.algorithms = (function(){
 
-    var lightColor = 0xffffffff;
+    var lc = 0xffffffff;
+    var _255_8 = 255<<8;
+    var _255_16 = 255<<16;
+    var _255_24 = 255<<24;
+    var rev_255 = 1/255;
+    var black = 255<<24;
+
+    var revW = 1/window.innerWidth;
+    var revH = 1/window.innerHeight;
+
+    var lr = (lc&255)*rev_255;
+    var lg = ((lc&(_255_8))>>8)*rev_255;
+    var lb = ((lc&(_255_16))>>16)*rev_255;
 
     function putPixel(ctx,x,y,c){
-        ctx.data[x+y*app.mwidth] = calculateColor(x,y,app.lx,app.ly,app.lz,lightColor);
+        ctx.data[x+y*app.mwidth] = calculateColor(x,y,app.lx,app.ly,app.lz,lc);
     }
 
     function putPixelR(ctx,x,y,c){
-        ctx.data[x*app.mwidth+y] = calculateColor(y,x,app.lx,app.ly,app.lz,lightColor);
+        ctx.data[x*app.mwidth+y] = calculateColor(y,x,app.lx,app.ly,app.lz,lc);
     }
 
     var buf = new ArrayBuffer(Float32Array.BYTES_PER_ELEMENT);
@@ -36,29 +48,26 @@ app.algorithms = (function(){
         dy*=inv;
         dz*=inv;
         // calculate object's normal vector
-
-        var ox = ((x<window.innerWidth/2?-1:1)*Math.abs(x-window.innerWidth/2));
-        var oy = ((y<window.innerHeight/2? -1:1)*Math.abs(y-window.innerHeight/2));
-        var oz = window.innerWidth;
+        var ox = 0;//((x<window.innerWidth/2?-1:1)*Math.abs(x-window.innerWidth/2));
+        var oy = 0;//((y<window.innerHeight/2? -1:1)*Math.abs(y-window.innerHeight/2));
+        var oz = 1;//window.innerWidth;
         // normalize it
         inv = 1/Math.sqrt(ox*ox+oy*oy+oz*oz);
         ox*=inv;
         oy*=inv;
         oz*=inv;
         // calculate normalized position on the canvas
-        var nx = x/window.innerWidth;
-        var ny = y/window.innerHeight;
-        // calcualte position on the bump map
+        var nx = x*revW;
+        var ny = y*revH;
+        // calculate position on the bump map
         var hx = Math.floor(nx*app.hMapWidth);
         var hy = Math.floor(ny*app.hMapHeight);
         // get bump map normal vector
-        var hmapNormalX = app.hMap[3*hx+3*hy*app.hMapWidth];
-        var hmapNormalY = app.hMap[3*hx+3*hy*app.hMapWidth+1];
-        var hmapNormalZ = app.hMap[3*hx+3*hy*app.hMapWidth+2];
         // add bump map's normal vector to object's normal vector and normalize the result
-        ox += hmapNormalX;
-        oy += hmapNormalY;
-        oz += hmapNormalZ;
+        var offset = 3*(hx+hy*app.hMapWidth);
+        ox += app.hMap[offset];
+        oy += app.hMap[offset+1];
+        oz += app.hMap[offset+2];
         inv = 1/Math.sqrt(ox*ox+oy*oy+oz*oz);//invsqrt(ox*ox+oy*oy+oz*oz);
         ox*=inv;
         oy*=inv;
@@ -68,79 +77,91 @@ app.algorithms = (function(){
         var cos = dx*ox+dy*oy+dz*oz;
         if (cos<0) cos =0 ;
         // calculate the coordinates on the texture
+
+        //var tx = x%app.texWidth;
+        //var ty = y%app.texHeight;
         var tx = x%app.texWidth;
         var ty = y%app.texHeight;
+
+
         // get texture colors
         var value = app.texture[tx+ty*app.texWidth];
         var r = (value&255);//app.texture[4*tx+4*ty*app.texWidth]/255;
-        var g = ((value&(255<<8))>>8);//app.texture[4*tx+4*ty*app.texWidth+1]/255;
-        var b = ((value&(255<<16))>>16);//app.texture[4*tx+4*ty*app.texWidth+2]/255;
+        var g = ((value&(_255_8))>>8);//app.texture[4*tx+4*ty*app.texWidth+1]/255;
+        var b = ((value&(_255_16))>>16);//app.texture[4*tx+4*ty*app.texWidth+2]/255;
         // calculate light color components
-        var lr = (lc&255)/255;
-        var lg = ((lc&(255<<8))>>8)/255;
-        var lb = ((lc&(255<<16))>>16)/255;
+        // precalculated
         // calculate the reflected light color
-
-        return 255<<24 | (b*lb*cos)<<16 | (g*lg*cos)<<8 | (cos*r*lr);
+        return _255_24 | (b*lb*cos)<<16 | (g*lg*cos)<<8 | (cos*r*lr);
     }
 
     function scan_line(ctx,polygon){
-            var edges = polygon.edges;
+        var edges = polygon.edges;
 
-            var yMin = edges[0].from.y;
-            var yMax = edges[0].from.y;
+        var yMin = edges[0].from.y;
+        var yMax = edges[0].from.y;
+        var i,len;
+        var et = {};
 
-            var et = {};
+        //var lines = [];
 
-            edges.forEach(function(edge){
-                var from = edge.from;
-                var to = edge.to;
+        for (i=0,len=edges.length;i<len;i++){
+            var edge = edges[i];
+            var from = edge.from;
+            var to = edge.to;
 
-                if (to.y<from.y) {
-                    var tmp = from;
-                    from = to;
-                    to = tmp;
-                }
-                if (from.y<yMin) yMin = from.y;
-                if (to.y>yMax) yMax = to.y;
+            if (to.y<from.y) {
+                var tmp = from;
+                from = to;
+                to = tmp;
+            }
+            if (from.y<yMin) yMin = from.y;
+            if (to.y>yMax) yMax = to.y;
 
-                var dx = to.x-from.x;
-                var dy = to.y-from.y;
+            var dx = to.x-from.x;
+            var dy = to.y-from.y;
 
-                var step = dy==0? 0 :dx/dy;
+            var step = dy==0? 0 : dx/dy;
 
-                if (et[from.y]==undefined) et[from.y]=[];
-                et[from.y].push({yMax:to.y,xMin:from.x,step:step});
-            });
+            if (et[from.y]==undefined) et[from.y]=[];
+            et[from.y].push({yMax:to.y,xMin:from.x,step:step});
+        }
 
-            var aet = [];
-            var y = yMin;
+        var aet = [];
+        var y = yMin;
 
-        var i;
-        var black = 255<<24;
         while (y!=yMax){
             if (et[y]!=undefined)
                 aet = aet.concat(et[y]);
 
             aet.sort(function(a,b){return a.xMin<b.xMin});
 
-            for (i=0;i<aet.length-1;i+=2){
+            for (i=0,len=aet.length-1;i<len;i+=2){
                 var a = aet[i];
                 var b = aet[i+1];
-                quick_bresenham({x:Math.floor(a.xMin),y:y},{x:Math.floor(b.xMin),y:y},ctx,black);
+                //fx,fy,tx,ty,ctx,color
+
+                quick_bresenham2(Math.floor(a.xMin),y,Math.floor(b.xMin),y,ctx,black);
+                //lines.push([Math.floor(a.xMin),Math.floor(b.xMin),y]);
             }
 
             var arr = [];
             for (i=aet.length-1;i>=0;i--){
+                // TODO: efficiency
                 if (aet[i].yMax==y) aet.splice(i,1);
                 else if (aet[i].yMax==y+1) arr.push(aet[i]);
             }
+            // TODO: efficiency
             aet = aet.concat(arr);
+
             y++;
-            aet.forEach(function(s){
-               s.xMin+=s.step;
-            });
+            for (i=0,len=aet.length;i<len;i++){
+                var s = aet[i];
+                s.xMin+=s.step;
+            }
         }
+
+        //return lines;
     }
 
     function findIntersection(e1,e2){

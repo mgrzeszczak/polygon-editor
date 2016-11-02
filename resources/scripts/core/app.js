@@ -33,7 +33,7 @@ var app = (function(){
         app.lz = 10;
 
         texture = new Image();
-        texture.src = 'resources/images/wood.jpg';
+        texture.src = 'resources/images/test.png';
         texture.onload=function(){
             texCanvas = document.createElement('canvas');
             texCtx = texCanvas.getContext('2d');
@@ -55,7 +55,7 @@ var app = (function(){
         };
 
         hmap = new Image();
-        hmap.src = 'resources/images/bumpwood2.jpg';
+        hmap.src = 'resources/images/bump.jpg';
         hmap.onload = function(){
             hCanvas = document.createElement('canvas');
             hCanvas.width = this.width;
@@ -74,7 +74,8 @@ var app = (function(){
         memCtx.buf8 = new Uint8ClampedArray(memCtx.buf);
         memCtx.data = new Uint32Array(memCtx.buf);
 
-        /*
+        
+		/*
         pushVertex(app.factory.createVertex(0,0));
         pushVertex(app.factory.createVertex(0,window.innerHeight));
         pushVertex(app.factory.createVertex(window.innerWidth,window.innerHeight));
@@ -129,14 +130,14 @@ var app = (function(){
 
         var i,len;
         // FPS
-        /*if (Date.now() - app.lastDate > 1000) {
+        if (Date.now() - app.lastDate > 1000) {
             console.log(app.framesCount + ' ' + (Date.now()-app.lastDate));
             app.lastDate = Date.now();
             app.framesCount = 1;
         }
         else {
             app.framesCount++;
-        }*/
+        }
         //ctx.clearData();
         ctx.clearRect(0,0,canvas.width,canvas.height);
         var tmp = ctx;

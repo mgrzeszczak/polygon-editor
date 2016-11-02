@@ -17,8 +17,14 @@ app.objects.polygon = function(){
         var i,len;
         for (i=0,len=this.edges.length;i<len;i++) this.edges[i].draw(ctx);
 
-        //if (this.closed)
-         //   app.algorithms.fillPolygon(ctx,this);
+        /*
+        if (!this.closed) return;
+        for (i=0,len=this.lines.length;i<len;i++){
+            var l = this.lines[i];
+            app.algorithms.drawBresenhamLine(l[0],l[2],l[1],l[2],ctx,null);
+        }*/
+        if (this.closed==true)
+           app.algorithms.fillPolygon(ctx,this);
     };
 
     this.addVertex = function(vertex){
@@ -36,6 +42,7 @@ app.objects.polygon = function(){
 
         this.mapEdges();
         this.closed = true;
+        //this.lines = app.algorithms.fillPolygon(null,this);
         return true;
     };
 
