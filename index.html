@@ -8,7 +8,18 @@
 </head>
 <body>
 <canvas id="app-canvas"></canvas>
-<div class="hover">Icons made by <a href="http://www.flaticon.com/authors/dave-gandy" title="Dave Gandy">Dave Gandy</a> from <a href="http://www.flaticon.com" title="Flaticon">www.flaticon.com</a> License: <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a></div>
+<div class="hover">
+    <div id="controls">
+        <form>
+            <input type="file" accept=".jpg,.png" id="bgchooser"/>
+            <input type="file" accept=".jpg,.png" id="heightmapchooser"/>
+            <input class="jscolor" value="#ffffff" id="lightcolorpicker"/>
+        </form>
+    </div>
+    <div id="credits">
+        Icons made by <a href="http://www.flaticon.com/authors/dave-gandy" title="Dave Gandy">Dave Gandy</a> from <a href="http://www.flaticon.com" title="Flaticon">www.flaticon.com</a> License: <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a>
+    </div>
+</div>
 <script type="text/javascript" src="resources/scripts/core/app.js"></script>
 <script type="text/javascript" src="resources/scripts/core/config.js"></script>
 <script type="text/javascript" src="resources/scripts/core/content.js"></script>
@@ -30,6 +41,8 @@
         integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 
 <script type="text/javascript" src="resources/scripts/lib/bootbox.min.js"></script>
+<script type="text/javascript" src="resources/scripts/lib/jscolor.js"></script>
+
 <script>
     app.initialize();
 </script>

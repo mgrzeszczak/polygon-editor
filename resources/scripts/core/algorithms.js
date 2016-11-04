@@ -14,6 +14,16 @@ app.algorithms = (function(){
     var lg = ((lc&(_255_8))>>8)*rev_255;
     var lb = ((lc&(_255_16))>>16)*rev_255;
 
+    function setLightColor(color){
+        lc = color;
+        lr = (lc&255)*rev_255;
+        lg = ((lc&(_255_8))>>8)*rev_255;
+        lb = ((lc&(_255_16))>>16)*rev_255;
+        console.log(lr);
+        console.log(lg);
+        console.log(lb);
+    }
+
     function putPixel(ctx,x,y,c){
         ctx.data[x+y*app.mwidth] = calculateColor(x,y,app.lx,app.ly,app.lz,lc);
     }
@@ -221,6 +231,92 @@ app.algorithms = (function(){
         this.next = next;
     };
 
+    function checkAndRotate(polygon){
+        var sum = 0;
+        polygon.edges.forEach(function(e){
+            sum += (e.to.x-e.from.x)/(e.to.y+e.from.y);
+        });
+        if (sum>=0) {
+            var vertices = polygon.vertices;
+            var poly = new app.factory.createPolygon();
+            for (var i=vertices.length-1;i>=0;i--){
+                poly.addVertex(vertices[i]);
+            }
+            poly.close();
+            polygon = poly;
+        }
+        return polygon;
+    }
+
+    function createVertexList(polygon,dict){
+        var head = new app.node(polygon.vertices[0]);
+        var prev = head;
+        dict[prev.v.id]=prev;
+        for (var i =1;i<polygon.vertices.length;i++){
+            prev.next = new app.node(polygon.vertices[i]);
+            prev = prev.next;
+            dict[prev.v.id]=prev;
+        }
+        prev.next = head;
+        return head;
+    }
+
+    function addIntersectionPointsToList(polygon,intersections,dict){
+        for (var i=0,len=polygon.edges.length;i<len;i++){
+            var e = polygon.edges[i];
+            var intersectionPoints = intersections[e.id];
+            if (intersectionPoints==undefined) continue;
+
+            intersectionPoints.sort(function(a,b){
+                return app.utils.distance(e.from,a)-app.utils.distance(e.from,b);
+            });
+
+            var from = e.from;
+            var node = dict[from.id];
+            var last = node.next;
+            var prev = node;
+
+            for (var j=0;j<intersectionPoints.length;j++){
+                var v = intersectionPoints[j];
+                prev.next = new app.node(v);
+                prev = prev.next;
+                dict[v.id]=prev;
+            }
+            prev.next = last;
+        }
+    }
+
+    /********************************************
+     *  POINT IN POLYGON PROBLEM (RAY CASTING SOLUTION)
+     ********************************************/
+    function isPointInPolygon(x,y,edges){
+        function findNumberOfIntersections(e,edges){
+            var number = 0;
+            edges.forEach(function(edge){
+               if (findIntersection(edge,e).status==true) number++;
+            });
+            return number;
+        }
+        var point = app.factory.createVertex(x,y);
+        var pointN = app.factory.createVertex(x,0);
+        var pointS = app.factory.createVertex(x,window.innerHeight);
+        var pointW = app.factory.createVertex(0,y);
+        var pointE = app.factory.createVertex(window.innerWidth,y);
+
+        var segmentN = app.factory.createEdge(point,pointN);
+        var segmentS = app.factory.createEdge(point,pointS);
+        var segmentE = app.factory.createEdge(point,pointE);
+        var segmentW = app.factory.createEdge(point,pointW);
+
+        return !(findNumberOfIntersections(segmentN,edges)%2==0 &&
+                findNumberOfIntersections(segmentS,edges)%2==0 &&
+                findNumberOfIntersections(segmentE,edges)%2==0 &&
+                findNumberOfIntersections(segmentW,edges)%2==0);
+    }
+
+    /********************************************
+     *  WEILER-ATHERTON ALGORITHM IMPLEMENTATION
+     ********************************************/
     function clipPolygons(polyA, polyB){
         // make sure polygons do not intersect themselves
         if (!checkPolygonIntersections(polyA)
@@ -228,89 +324,32 @@ app.algorithms = (function(){
             alert('One or more polygons are invalid');
             return;
         }
-
+        // remove polygons from object list
         app.removePoly(polyA);
         app.removePoly(polyB);
-
         // check is clockwise both;
         // if not reverse order
-        // todo: add checking and enforcing clockwise order
-        var sum = 0;
-        polyA.edges.forEach(function(e){
-           sum += (e.to.x-e.from.x)/(e.to.y+e.from.y);
-        });
-        if (sum>=0) {
-            var vertices = polyA.vertices;
-            poly = new app.factory.createPolygon();
-            for (var i=vertices.length-1;i>=0;i--){
-                poly.addVertex(vertices[i]);
-            }
-            poly.close();
-            polyA = poly;
-        }
-
-        sum = 0;
-        polyB.edges.forEach(function(e){
-            sum += (e.to.x-e.from.x)/(e.to.y+e.from.y);
-        });
-        if (sum>=0) {
-            var vertices = polyB.vertices;
-            var poly = new app.factory.createPolygon();
-            for (var i=vertices.length-1;i>=0;i--){
-                poly.addVertex(vertices[i]);
-            }
-            poly.close();
-            polyB = poly;
-        }
-
-
-
-
-        /*point[0] = (5,0)   edge[0]: (6-5)(4+0) =   4
-        point[1] = (6,4)   edge[1]: (4-6)(5+4) = -18
-        point[2] = (4,5)   edge[2]: (1-4)(5+5) = -30
-        point[3] = (1,5)   edge[3]: (1-1)(0+5) =   0
-        point[4] = (1,0)   edge[4]: (5-1)(0+0) =   0*/
-        // if area negative -> clockwise
-
+        polyA = checkAndRotate(polyA);
+        polyB = checkAndRotate(polyB);
 
         // create one way lists for vertices of each polygon
         // with dictionaries that allow const time retrieval of any vertex in the list
         var dictA = {};
-        var headA = new app.node(polyA.vertices[0]);
-        var prev = headA;
-        dictA[prev.v.x+prev.v.y<<11]=prev;
-        for (var i =1;i<polyA.vertices.length;i++){
-            prev.next = new app.node(polyA.vertices[i]);
-            prev = prev.next;
-            dictA[prev.v.x+prev.v.y<<11]=prev;
-        }
-        prev.next = headA;
-
+        var headA = createVertexList(polyA,dictA);
         var dictB = {};
-        var headB = new app.node(polyB.vertices[0]);
-        prev = headB;
-        dictB[prev.v.x+prev.v.y<<11]=prev;
-        for (var i =1;i<polyB.vertices.length;i++){
-            prev.next = new app.node(polyB.vertices[i]);
-            prev = prev.next;
-            dictB[prev.v.x+prev.v.y<<11]=prev;
-        }
-        prev.next = headB;
+        var headB = createVertexList(polyB,dictB);
 
-        // find all intersection points
+        // find all intersection points and fill entrance point array
         var intersections = {}; // edge -> intersection point list dict
-        var inside = false;
-
+        var inside = isPointInPolygon(polyA.vertices[0].x,polyA.vertices[0].y,polyB.edges);
         var entrancePoints = [];
+
+
         for (var i=0,len=polyA.edges.length;i<len;i++){
             var e = polyA.edges[i];
-            //console.log('i '+i);
             for (var j=0,len2=polyB.edges.length;j<len2;j++){
                 var ret = findIntersection(e,polyB.edges[j]);
-                //console.log('j '+j);
                 if (ret.status==true) {
-                    //console.log(e.id+" with "+polyB.edges[j].id);
                     if (intersections[e.id]==undefined){
                         intersections[e.id]=[];
                     }
@@ -321,13 +360,11 @@ app.algorithms = (function(){
                     intersections[polyB.edges[j].id].push(ret.v);
                 }
             }
-            //console.log(intersections[e.id]);
 
             if (intersections[e.id]==undefined) continue;
             var intersectionPoints = intersections[e.id];
             intersectionPoints.sort(function(a,b){
-                if (e.from.x==e.to.x) return e.from.y<e.to.y?a.y-b.y : b.y-a.y;
-                return e.from.x<e.to.x ? a.x-b.x : b.x-a.x;
+                return app.utils.distance(e.from,a)-app.utils.distance(e.from,b);
             });
 
             for (var k=0;k<intersectionPoints.length;k++){
@@ -337,56 +374,12 @@ app.algorithms = (function(){
             }
         }
 
-        console.log(intersections);
-        //return;
-
-        // add intersection points to lists
-        for (var i=0,len=polyA.edges.length;i<len;i++){
-            var e = polyA.edges[i];
-            var intersectionPoints = intersections[e.id];
-            if (intersectionPoints==undefined) continue;
-
-            var from = e.from;
-            var node = dictA[from.x+from.y<<11];
-            var last = node.next;
-            var prev = node;
-
-            for (var j=0;j<intersectionPoints.length;j++){
-                var v = intersectionPoints[j];
-                prev.next = new app.node(v);
-                prev = prev.next;
-                dictA[v.x+v.y<<11]=prev;
-            }
-            prev.next = last;
-        }
-        for (var i=0,len=polyB.edges.length;i<len;i++){
-            var e = polyB.edges[i];
-            var intersectionPoints = intersections[e.id];
-
-            if (intersectionPoints == undefined) continue;
-            intersectionPoints.sort(function(a,b){
-                if (e.from.x==e.to.x) return e.from.y<e.to.y?a.y-b.y : b.y-a.y;
-                return e.from.x<e.to.x ? a.x-b.x : b.x-a.x;
-            });
-            var from = e.from;
-            var node = dictB[from.x+from.y<<11];
-            var last = node.next;
-            var prev = node;
-
-            for (var j=0;j<intersectionPoints.length;j++){
-                var v = intersectionPoints[j];
-                prev.next = new app.node(v);
-                prev = prev.next;
-                dictB[v.x+v.y<<11]=prev;
-            }
-            prev.next = last;
-        }
-
+        addIntersectionPointsToList(polyA,intersections,dictA);
+        addIntersectionPointsToList(polyB,intersections,dictB);
 
         for (var i=0;i<entrancePoints.length;i++){
             entrancePoints[i].visited = false;
         }
-
 
         var rects = [];
         for (var i=0;i<entrancePoints.length;i++){
@@ -400,36 +393,16 @@ app.algorithms = (function(){
             // switch polygons
             // on return to the first entrance point, stop
             rect.push(firstEntrancePoint);
-            var node = dictA[firstEntrancePoint.x+firstEntrancePoint.y<<11];
+            var node = dictA[firstEntrancePoint.id];
             node = node.next;
 
             while (node.v.id!=firstEntrancePoint.id){
                 node.v.visited = true;
                 rect.push(node.v.clone());
-                if (node.v.entrance==false) node = dictB[node.v.x+node.v.y<<11];
-                else if (node.v.entrance == true) node = dictA[node.v.x+node.v.y<<11];
+                if (node.v.entrance==false) node = dictB[node.v.id];
+                else if (node.v.entrance == true) node = dictA[node.v.id];
                 node = node.next;
             }
-
-            /*
-            var p = entrancePoints[i];
-            rect.push(p);
-            var head = dictA[p.x+p.y<<11];
-            var node = head;
-            while (node.v.entrance!=false){
-                node = node.next;
-                node.v.visited = true;
-                rect.push(node.v);
-            }
-            node = dictB[node.v.x+node.v.y<<11];
-            node = node.next;
-            while (node.v.id!=head.v.id){
-                node.v.visited = true;
-                rect.push(node.v.clone());
-                node = node.next;
-            }*/
-
-
             rects.push(rect);
         }
 
@@ -442,12 +415,8 @@ app.algorithms = (function(){
                 polygon.addVertex(v);
             });
             polygon.close();
-            console.log('Adding polygon: ');
-            console.log(polygon);
             app.addPoly(polygon);
         });
-
-        console.log(rects);
     }
 
     function aa_wu_line(from,to,ctx,color){
@@ -644,6 +613,7 @@ app.algorithms = (function(){
         drawBresenhamLine : quick_bresenham2,
         aaLine : aa_wu_line,
         fillPolygon : scan_line,
-        weilerAtherton : clipPolygons
+        weilerAtherton : clipPolygons,
+        setLightColor : setLightColor
     }
 })();

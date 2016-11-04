@@ -9,6 +9,10 @@ body {
     overflow: hidden;
 }
 
+.hidden {
+    visibility : hidden;
+}
+
 .hover {
 	position: absolute;
 	left: 0px;

@@ -14,7 +14,7 @@ var app = (function(){
     var texCtx;
 
     var hmap;
-    var hCanvas;
+    var hCanvas = null;
     var hCtx;
 
     function initialize(){
@@ -33,7 +33,56 @@ var app = (function(){
         app.lz = 10;
 
         texture = new Image();
-        texture.src = 'resources/images/test.png';
+        texture.crossOrigin = "Anonymous";
+        loadBackgroundImage('resources/images/white.png');
+
+        hmap = new Image();
+        hmap.crossOrigin = "Anonymous";
+        loadHeightMap('resources/images/bump.jpg');
+        /*hmap.src = 'resources/images/bump.jpg';
+        hmap.onload = function(){
+            hCanvas = document.createElement('canvas');
+            hCanvas.width = this.width;
+            hCanvas.height = this.height;
+            hCtx = hCanvas.getContext('2d');
+            hCtx.drawImage(this,0,0);
+            processHeightMap(hCtx.getImageData(0,0,hCanvas.width,hCanvas.height).data,hCanvas.width,hCanvas.height);
+        };*/
+
+        memCanvas = document.createElement('canvas');
+        memCanvas.width = app.mwidth;
+        memCanvas.height = app.mheight;
+        memCtx = memCanvas.getContext('2d');
+        memCtx.pixelArray = memCtx.getImageData(0,0,memCanvas.width,memCanvas.height);
+        memCtx.buf = new ArrayBuffer(memCtx.pixelArray.data.length);
+        memCtx.buf8 = new Uint8ClampedArray(memCtx.buf);
+        memCtx.data = new Uint32Array(memCtx.buf);
+        
+		/*
+        pushVertex(app.factory.createVertex(0,0));
+        pushVertex(app.factory.createVertex(0,window.innerHeight));
+        pushVertex(app.factory.createVertex(window.innerWidth,window.innerHeight));
+        pushVertex(app.factory.createVertex(window.innerWidth,0));
+        finishPoly();*/
+
+        requestAnimationFrame(drawLoop);
+    }
+
+    function loadHeightMap(src){
+        hmap.src = src;
+        hmap.onload = function(){
+            if (hCanvas == null) hCanvas = document.createElement('canvas');
+            hCanvas.width = this.width;
+            hCanvas.height = this.height;
+            hCtx = hCanvas.getContext('2d');
+            hCtx.drawImage(this,0,0);
+            processHeightMap(hCtx.getImageData(0,0,hCanvas.width,hCanvas.height).data,hCanvas.width,hCanvas.height);
+        };
+    }
+
+    function loadBackgroundImage(src){
+        texture.src = src;
+
         texture.onload=function(){
             texCanvas = document.createElement('canvas');
             texCtx = texCanvas.getContext('2d');
@@ -53,36 +102,6 @@ var app = (function(){
 
             app.texture = data;
         };
-
-        hmap = new Image();
-        hmap.src = 'resources/images/bump.jpg';
-        hmap.onload = function(){
-            hCanvas = document.createElement('canvas');
-            hCanvas.width = this.width;
-            hCanvas.height = this.height;
-            hCtx = hCanvas.getContext('2d');
-            hCtx.drawImage(this,0,0);
-            processHeightMap(hCtx.getImageData(0,0,hCanvas.width,hCanvas.height).data,hCanvas.width,hCanvas.height);
-        };
-
-        memCanvas = document.createElement('canvas');
-        memCanvas.width = app.mwidth;
-        memCanvas.height = app.mheight;
-        memCtx = memCanvas.getContext('2d');
-        memCtx.pixelArray = memCtx.getImageData(0,0,memCanvas.width,memCanvas.height);
-        memCtx.buf = new ArrayBuffer(memCtx.pixelArray.data.length);
-        memCtx.buf8 = new Uint8ClampedArray(memCtx.buf);
-        memCtx.data = new Uint32Array(memCtx.buf);
-
-        
-		/*
-        pushVertex(app.factory.createVertex(0,0));
-        pushVertex(app.factory.createVertex(0,window.innerHeight));
-        pushVertex(app.factory.createVertex(window.innerWidth,window.innerHeight));
-        pushVertex(app.factory.createVertex(window.innerWidth,0));
-        finishPoly();*/
-
-        requestAnimationFrame(drawLoop);
     }
 
     function processHeightMap(hmap,width,height){
@@ -124,38 +143,58 @@ var app = (function(){
         app.content.canvas.addEventListener('mousedown',app.callbacks.onMouseDown,true);
         document.addEventListener('keydown',app.callbacks.onKeyDown,true);
         document.addEventListener('mousemove',app.callbacks.onMouseMove,true);
+        app.content.lightColorPicker.value = '#ffffff';
+        app.content.lightColorPicker.onchange = onLightColorChange;
+        app.content.heightMapChooser.onchange = onHeightMapChange;
+        app.content.bgChooser.onchange = onBgImageChange;
+    }
+
+    function onBgImageChange(){
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            loadBackgroundImage(reader.result);
+        };
+        reader.readAsDataURL(app.content.bgChooser.files[0]);
+    }
+
+    function onLightColorChange(){
+        var lc = app.utils.hexToColor(app.content.lightColorPicker.value);
+        console.log(lc);
+        app.algorithms.setLightColor(lc);
+    }
+
+    function onHeightMapChange(){
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            loadHeightMap(reader.result);
+        };
+        reader.readAsDataURL(app.content.heightMapChooser.files[0]);
     }
 
     function drawLoop(){
-
         var i,len;
-        // FPS
-        if (Date.now() - app.lastDate > 1000) {
-            console.log(app.framesCount + ' ' + (Date.now()-app.lastDate));
-            app.lastDate = Date.now();
-            app.framesCount = 1;
+        if (app.config.debug){
+            // FPS
+            if (Date.now() - app.lastDate > 1000) {
+                 console.log(app.framesCount + ' ' + (Date.now()-app.lastDate));
+                 app.lastDate = Date.now();
+                 app.framesCount = 1;
+            }
+            else {
+                 app.framesCount++;
+            }
         }
-        else {
-            app.framesCount++;
-        }
-        //ctx.clearData();
         ctx.clearRect(0,0,canvas.width,canvas.height);
         var tmp = ctx;
         ctx = memCtx;
         ctx.data.fill(0xffffffff);
 
-        var v1 = {x:0,y:0};
-        var v2 = {x:1800,y:1000};
-
-        /*
-        for (i=0;i<2500;i++){
-            app.algorithms.drawBresenhamLine(v1.x,v1.y,v2.x,v2.y,ctx,255<<24);
-        }*/
-
-
+        ctx.vertices = [];
         for(i=0,len=objects.length;i<len;i++){
             objects[i].draw(ctx);
         }
+        if (poly!=null) poly.draw(ctx);
+
 
         /*
         ctx.relationImgs = [];
@@ -181,6 +220,19 @@ var app = (function(){
 
         ctx.pixelArray.data.set(ctx.buf8);
         ctx.putImageData(ctx.pixelArray,0,0);
+
+        if (app.config.debug){
+            ctx.font="20px Arial";
+            for(i=0,len=objects.length;i<len;i++){
+                objects[i].vertices.forEach(function(v){
+                    ctx.fillText(v.id+' x: '+v.x+' y: '+v.y,v.x,v.y);
+                });
+                objects[i].edges.forEach(function(e){
+                    ctx.fillText(e.id+' ',e.from.x/2+e.to.x/2,e.from.y/2+e.to.y/2);
+                });
+            }
+        }
+
         ctx = tmp;
         ctx.drawImage(memCanvas,0,0);
         requestAnimationFrame(drawLoop);
@@ -191,9 +243,8 @@ var app = (function(){
 
     }
     function finishPoly(){
-        if (!poly.close()) objects.splice(objects.indexOf(poly),1);
+        if (poly.close()) objects.push(poly);
         poly = app.factory.createPolygon();
-        objects.push(poly);
     }
 
     function removePoly(poly){
@@ -201,9 +252,7 @@ var app = (function(){
     }
 
     function addPoly(poly){
-        console.log('Adding: ');
-        console.log(poly);
-        objects.unshift(poly);
+        objects.push(poly);
     }
 
     function enterEditMode(){
@@ -337,7 +386,6 @@ var app = (function(){
 
     function enterCreateMode(){
         poly = app.factory.createPolygon();
-        objects.push(poly);
     }
 
     return {
