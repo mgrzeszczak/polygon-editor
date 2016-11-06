@@ -348,6 +348,26 @@ app.algorithms = (function(){
         polyA = checkAndRotate(polyA);
         polyB = checkAndRotate(polyB);
 
+        var aInb = true;
+        polyA.vertices.forEach(function(v){
+            if (!isPointInPolygon(v.x,v.y,polyB.edges)) {
+                aInb = false;
+            }
+        });
+        if (aInb == true){
+            app.addPoly(polyA);
+            return;
+        }
+        var bIna = true;
+        polyB.vertices.forEach(function(v){
+            if (!isPointInPolygon(v.x,v.y,polyA.edges)) {
+                bIna = false;
+            }
+        });
+        if (bIna == true){
+            app.addPoly(polyA);
+            return;
+        }
         // create one way lists for vertices of each polygon
         // with dictionaries that allow const time retrieval of any vertex in the list
         var dictA = {};
@@ -433,8 +453,6 @@ app.algorithms = (function(){
             polygon.close();
             app.addPoly(polygon);
         });
-
-        app.mode.setMode(app.modes.MOVE);
     }
 
     function aa_wu_line(from,to,ctx,color){

@@ -268,6 +268,7 @@ var app = (function(){
     }
 
     function enterEditMode(){
+        clipPolygon = null;
         objects.forEach(function(obj){
             obj.imgs = [];
 
@@ -377,7 +378,13 @@ var app = (function(){
                   } else if (result == 3){
                       if (clipPolygon==null) clipPolygon = obj;
                       else if (clipPolygon==obj) clipPolygon=null;
-                      else app.algorithms.weilerAtherton(clipPolygon,obj);
+                      else {
+                          app.algorithms.weilerAtherton(clipPolygon,obj);
+                          clipPolygon = null;
+
+                          app.mode.setMode(app.modes.MOVE);
+                          app.mode.setMode(app.modes.EDIT);
+                      }
                   }
 
               });
