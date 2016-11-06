@@ -61,7 +61,7 @@ app.factory = (function(){
         function startDrag(e) {
             app.setGhostCopy(img.obj.clone());
             self.setAttribute("class","save");
-            $("img").not(".save").remove();
+            $("img:not(.permanent)").not(".save").remove();
             startPos = {x:e.clientX,y:e.clientY};
             self.beginPos = {x:self.x,y:self.y};
             vertices.forEach(function(vertex){
@@ -110,7 +110,8 @@ app.factory = (function(){
         createPolygon : createPolygon,
         createEdge : createEdge,
         createVertex : createVertex,
-        createImage : createImage
+        createImage : createImage,
+        showDialog : bootBoxPrompt
     }
 
 })();

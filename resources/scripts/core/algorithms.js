@@ -7,6 +7,8 @@ app.algorithms = (function(){
     var rev_255 = 1/255;
     var black = 255<<24;
 
+    var normalVectorFunction = null;
+
     var revW = 1/window.innerWidth;
     var revH = 1/window.innerHeight;
 
@@ -19,9 +21,9 @@ app.algorithms = (function(){
         lr = (lc&255)*rev_255;
         lg = ((lc&(_255_8))>>8)*rev_255;
         lb = ((lc&(_255_16))>>16)*rev_255;
-        console.log(lr);
-        console.log(lg);
-        console.log(lb);
+        //console.log(lr);
+        //console.log(lg);
+        //console.log(lb);
     }
 
     function putPixel(ctx,x,y,c){
@@ -53,38 +55,53 @@ app.algorithms = (function(){
         var dy = ly-y;
         var dz = lz;
         // normalize vector to light
-        var inv = 1/Math.sqrt(dx*dx+dy*dy+dz*dz);
-        dx*=inv;
-        dy*=inv;
-        dz*=inv;
+
+        // length of vector to light
+        var dl = Math.sqrt(dx*dx+dy*dy+dz*dz);
+        //var inv = 1/Math.sqrt(dx*dx+dy*dy+dz*dz);
+        //dx*=inv;
+        //dy*=inv;
+        //dz*=inv;
+
         // calculate object's normal vector
         var ox = 0;//((x<window.innerWidth/2?-1:1)*Math.abs(x-window.innerWidth/2));
         var oy = 0;//((y<window.innerHeight/2? -1:1)*Math.abs(y-window.innerHeight/2));
         var oz = 1;//window.innerWidth;
         // normalize it
+
+        /*
         inv = 1/Math.sqrt(ox*ox+oy*oy+oz*oz);
         ox*=inv;
         oy*=inv;
         oz*=inv;
+        */
+
         // calculate normalized position on the canvas
-        var nx = x*revW;
-        var ny = y*revH;
+        //var nx = x*revW;
+        //var ny = y*revH;
         // calculate position on the bump map
-        var hx = Math.floor(nx*app.hMapWidth);
-        var hy = Math.floor(ny*app.hMapHeight);
+        //var hx = Math.floor(nx*app.hMapWidth);
+        //var hy = Math.floor(ny*app.hMapHeight);
+        var hx = Math.floor(x%app.hMapWidth);
+        var hy = Math.floor(y%app.hMapHeight);
         // get bump map normal vector
         // add bump map's normal vector to object's normal vector and normalize the result
         var offset = 3*(hx+hy*app.hMapWidth);
         ox += app.hMap[offset];
         oy += app.hMap[offset+1];
         oz += app.hMap[offset+2];
+
+
+        /*
         inv = 1/Math.sqrt(ox*ox+oy*oy+oz*oz);//invsqrt(ox*ox+oy*oy+oz*oz);
         ox*=inv;
         oy*=inv;
-        oz*=inv;
+        oz*=inv;*/
+
+
         // calculate the cosine between normal vector and vector to the light
         // it is equal to the dot product of the aforementioned vectors
-        var cos = dx*ox+dy*oy+dz*oz;
+        var cos = (dx*ox+dy*oy+dz*oz)/(dl*Math.sqrt(ox*ox+oy*oy+oz*oz));
         if (cos<0) cos =0 ;
         // calculate the coordinates on the texture
 
@@ -210,6 +227,7 @@ app.algorithms = (function(){
         return {status:false};
     }
 
+    // number of intersections should be equal to the amount of vertices
     function checkPolygonIntersections(poly){
         var edges = poly.edges;
         var count =0;
@@ -218,11 +236,9 @@ app.algorithms = (function(){
                 var ret = findIntersection(edges[i],edges[j]);
                 if (ret.status==true){
                     count+=1;
-                    //console.log(ret.v);
                 }
             }
         }
-        //console.log(count);
         return count==poly.vertices.length;
     }
 
@@ -417,6 +433,8 @@ app.algorithms = (function(){
             polygon.close();
             app.addPoly(polygon);
         });
+
+        app.mode.setMode(app.modes.MOVE);
     }
 
     function aa_wu_line(from,to,ctx,color){
@@ -609,11 +627,16 @@ app.algorithms = (function(){
         }
     }
 
+    function setNormalVectorFunction(f){
+        normalVectorFunction = f;
+    }
+
     return {
         drawBresenhamLine : quick_bresenham2,
         aaLine : aa_wu_line,
         fillPolygon : scan_line,
         weilerAtherton : clipPolygons,
-        setLightColor : setLightColor
+        setLightColor : setLightColor,
+        setNormalVectorFunction: setNormalVectorFunction,
     }
 })();

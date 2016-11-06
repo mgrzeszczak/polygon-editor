@@ -18,3 +18,32 @@ body {
 	left: 0px;
 	bottom: 0px;
 }
+
+.hover:hover .hover-content{
+    display:block;
+}
+
+.hover-content{
+    background: #D3D3D3;
+    display:none;
+}
+
+.permanent {
+    width: 25px;
+}
+
+.hover:hover .permanent {
+    display: none;
+}
+
+legend {
+    border-bottom: 0px;
+    text-align: center;
+}
+
+
+
+input[type="file"].invisible {
+
+    display: none;
+}

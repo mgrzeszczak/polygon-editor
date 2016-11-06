@@ -7,5 +7,5 @@ app.config = {
     background : '#ffffff',
     smallImageSize : 20,
     mediumImageSize : 30,
-    debug : false,
+    debug : true,
 };

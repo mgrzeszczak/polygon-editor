@@ -1,7 +1,7 @@
 app.utils = (function(){
 
     function clearImages(){
-        $("img").remove();
+        $("img:not(.permanent)").remove();
     }
 
     function distance(a,b){

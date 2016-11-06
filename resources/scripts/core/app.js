@@ -17,6 +17,8 @@ var app = (function(){
     var hCanvas = null;
     var hCtx;
 
+    var clipPolygon = null;
+
     function initialize(){
         registerCallbacks();
         app.callbacks.onResize();
@@ -147,6 +149,16 @@ var app = (function(){
         app.content.lightColorPicker.onchange = onLightColorChange;
         app.content.heightMapChooser.onchange = onHeightMapChange;
         app.content.bgChooser.onchange = onBgImageChange;
+        app.content.normalVecButton.onclick = chooseNormalVectorFunction;
+    }
+
+    function chooseNormalVectorFunction(){
+        var options = [
+            {text:"x+y",value:0,f:function(x,y){return x+y;}},
+        ];
+        app.factory.showDialog('Choose normal vector function:',options,function(value){
+            app.algorithms.setNormalVectorFunction(options[~~value].f);
+        });
     }
 
     function onBgImageChange(){
@@ -159,7 +171,7 @@ var app = (function(){
 
     function onLightColorChange(){
         var lc = app.utils.hexToColor(app.content.lightColorPicker.value);
-        console.log(lc);
+        //console.log(lc);
         app.algorithms.setLightColor(lc);
     }
 
@@ -259,7 +271,12 @@ var app = (function(){
         objects.forEach(function(obj){
             obj.imgs = [];
 
+            var meanVertex = app.factory.createVertex(0,0);
+
             obj.vertices.forEach(function(vertex){
+                meanVertex.x+=vertex.x;
+                meanVertex.y+=vertex.y;
+
                 var img = app.factory.createImage(app.config.editIcon,vertex.x-app.config.smallImageSize/2,
                     vertex.y-app.config.smallImageSize/2,app.config.smallImageSize,app.config.smallImageSize);
                 obj.imgs.push(img);
@@ -340,17 +357,29 @@ var app = (function(){
             });
 
             if (obj.vertices.length==0) return;
-            var firstVertex = obj.vertices[0];
+
+            meanVertex.x/=obj.vertices.length;
+            meanVertex.y/=obj.vertices.length;
+            var firstVertex = meanVertex;
 
             var img = app.factory.createImage(app.config.editIcon,firstVertex.x-2*app.config.mediumImageSize,
                 firstVertex.y-2*app.config.mediumImageSize,app.config.mediumImageSize,app.config.mediumImageSize);
             obj.imgs.push(img);
             img.onclick=function(){
-              img.prompt('Edit polygon',[{text:"Remove",value:1},{text:"Fill",value:2}],function(result){
+              img.prompt('Edit polygon',[{text:"Remove",value:1},
+                  {text:obj.fill? "Don't fill" : "Fill",value:2},
+                  {text:clipPolygon==obj?"Don't clip":"Clip",value:3}],function(result){
                   if (result == 1){
                       objects.splice(objects.indexOf(obj),1);
                       obj.clearImgs();
+                  } else if (result == 2){
+                      obj.fill = !obj.fill;
+                  } else if (result == 3){
+                      if (clipPolygon==null) clipPolygon = obj;
+                      else if (clipPolygon==obj) clipPolygon=null;
+                      else app.algorithms.weilerAtherton(clipPolygon,obj);
                   }
+
               });
             };
             document.body.appendChild(img);
