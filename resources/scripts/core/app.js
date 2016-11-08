@@ -32,7 +32,7 @@ var app = (function(){
 
         app.lx = window.innerWidth/2;
         app.ly = window.innerHeight/2;
-        app.lz = 10;
+        app.lz = 10000;
 
         texture = new Image();
         texture.crossOrigin = "Anonymous";
@@ -120,8 +120,9 @@ var app = (function(){
                 var sy = hmap[4*tx+4*width*(ty<height-1?ty+1:ty)] - hmap[4*tx+4*width*(ty==0?ty:ty-1)];
                 if (ty == 0 || ty == height -1)
                     sy *= 2;
-                var hmapNormalX = -sx/255;
-                var hmapNormalY = -sy/255;
+				
+                var hmapNormalX = sx/255;
+                var hmapNormalY = sy/255;
                 var hmapNormalZ = 2;
 
                 inv = 1/Math.sqrt(hmapNormalX*hmapNormalX+hmapNormalY*hmapNormalY+hmapNormalZ*hmapNormalZ);

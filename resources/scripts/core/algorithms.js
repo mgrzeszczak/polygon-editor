@@ -48,7 +48,7 @@ app.algorithms = (function(){
         return y;
     }
 
-
+	var counter  = 0;
     function calculateColor(x,y,lx,ly,lz,lc){
         // calculate vector to light
         var dx = lx-x;
@@ -57,24 +57,37 @@ app.algorithms = (function(){
         // normalize vector to light
 
         // length of vector to light
-        var dl = Math.sqrt(dx*dx+dy*dy+dz*dz);
-        //var inv = 1/Math.sqrt(dx*dx+dy*dy+dz*dz);
-        //dx*=inv;
-        //dy*=inv;
-        //dz*=inv;
+        //var dl = Math.sqrt(dx*dx+dy*dy+dz*dz);
+        var inv = 1/Math.sqrt(dx*dx+dy*dy+dz*dz);
+        dx*=inv;
+        dy*=inv;
+        dz*=inv;
 
         // calculate object's normal vector
-        var ox = 0;//((x<window.innerWidth/2?-1:1)*Math.abs(x-window.innerWidth/2));
-        var oy = 0;//((y<window.innerHeight/2? -1:1)*Math.abs(y-window.innerHeight/2));
+		
+		//x*(window.innerWidth-x)+y*(window.innerHeight-y)
+		
+		// N = -dz/dx, -dz/dy,1
+		
+        var ox = 100*(2*x-window.innerWidth)/window.innerWidth;//50*(2*x-window.innerWidth);//0//((x<window.innerWidth/2?-1:1)*Math.abs(x-window.innerWidth/2));
+        var oy = 100*(2*y-window.innerHeight)/window.innerHeight;//50*(2*y-window.innerHeight);//0//((y<window.innerHeight/2? -1:1)*Math.abs(y-window.innerHeight/2));
         var oz = 1;//window.innerWidth;
+		
+		
         // normalize it
 
-        /*
-        inv = 1/Math.sqrt(ox*ox+oy*oy+oz*oz);
+        
+        var inv = 1/Math.sqrt(ox*ox+oy*oy+oz*oz);
         ox*=inv;
         oy*=inv;
         oz*=inv;
-        */
+        
+		counter++;
+		if (counter%10000000==0){
+			console.log(x+' '+y);
+			console.log(ox+' '+oy+' '+oz);
+			counter = 0;
+		}
 
         // calculate normalized position on the canvas
         //var nx = x*revW;
@@ -87,21 +100,52 @@ app.algorithms = (function(){
         // get bump map normal vector
         // add bump map's normal vector to object's normal vector and normalize the result
         var offset = 3*(hx+hy*app.hMapWidth);
-        ox += app.hMap[offset];
-        oy += app.hMap[offset+1];
-        oz += app.hMap[offset+2];
+		
+		var nx = ox;
+		var ny = oy;
+		
+        /*ox -= app.hMap[offset];
+        oy -= app.hMap[offset+1];
+        oz += -nx*app.hMap[offset]-ny*app.hMap[offset+1]//app.hMap[offset+2];*/
 
-
-        /*
+		
+	
+		ttx = 1;
+		ttz = -nx;
+		inv = 1/Math.sqrt(ttx*ttx+ttz*ttz);//invsqrt(ox*ox+oy*oy+oz*oz);
+		
+		ttx*=inv;
+		ttz*=inv;
+		
+		bby = 1;
+		bbz = -ny;
+		inv = 1/Math.sqrt(bby*bby+bbz*bbz);//invsqrt(ox*ox+oy*oy+oz*oz);
+		
+		bby*=inv;
+		bbz*=inv;
+	
+		var ddx = -app.hMap[offset]*ttx;
+        var ddy = -app.hMap[offset+1]*bby;
+        var ddz = -ttz*app.hMap[offset]-bbz*app.hMap[offset+1]//app.hMap[offset+2];
+		
+		/*inv = 1/Math.sqrt(ddx*ddx+ddy*ddy+ddz*ddz);//invsqrt(ox*ox+oy*oy+oz*oz);
+        ddx*=inv;
+        ddy*=inv;
+        ddz*=inv*/;
+		
+		ox+=ddx;
+		oy+=ddy;
+		oz+=ddz;
+        
         inv = 1/Math.sqrt(ox*ox+oy*oy+oz*oz);//invsqrt(ox*ox+oy*oy+oz*oz);
         ox*=inv;
         oy*=inv;
-        oz*=inv;*/
-
+        oz*=inv;
+		
 
         // calculate the cosine between normal vector and vector to the light
         // it is equal to the dot product of the aforementioned vectors
-        var cos = (dx*ox+dy*oy+dz*oz)/(dl*Math.sqrt(ox*ox+oy*oy+oz*oz));
+        var cos = (dx*ox+dy*oy+dz*oz);///(Math.sqrt(ox*ox+oy*oy+oz*oz));
         if (cos<0) cos =0 ;
         // calculate the coordinates on the texture
 
