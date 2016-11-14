@@ -19,6 +19,9 @@ var app = (function(){
 
     var clipPolygon = null;
 
+    var revWidth = 1/window.innerWidth;
+    var revHeight = 1/window.innerHeight;
+
     function initialize(){
         registerCallbacks();
         app.callbacks.onResize();
@@ -74,6 +77,7 @@ var app = (function(){
         requestAnimationFrame(drawLoop);
     }
 
+
     function loadHeightMap(src){
         hmap.src = src;
         hmap.onload = function(){
@@ -118,8 +122,8 @@ var app = (function(){
                 var tx = i;
                 var ty = j;
 
-                var sx = hmap[4*(tx==width-1? tx : tx+1)+4*ty*width]-hmap[4*tx+4*ty*width];
-                var sy = hmap[4*tx+4*(ty==height-1?ty:ty+1)*width]-hmap[4*tx+4*ty*width];
+                var sx = (255-hmap[4*(tx==width-1? tx : tx+1)+4*ty*width])-(255-hmap[4*tx+4*ty*width]);
+                var sy = (255-hmap[4*tx+4*(ty==height-1?ty:ty+1)*width])-(255-hmap[4*tx+4*ty*width]);
                 /*var sx = hmap[4*(tx<width-1?tx+1:tx)+4*ty*width] - hmap[(tx==0? tx : tx-1)*4 + 4*ty*width];
                 if (tx == 0 || tx == width-1)
                     sx *= 2;
@@ -128,8 +132,8 @@ var app = (function(){
                 if (ty == 0 || ty == height -1)
                     sy *= 2;*/
 				
-                var hmapNormalX = sx/255;
-                var hmapNormalY = sy/255;
+                var hmapNormalX = -sx/255;
+                var hmapNormalY = -sy/255;
                 var hmapNormalZ = 2;
 
                 /*inv = 1/Math.sqrt(hmapNormalX*hmapNormalX+hmapNormalY*hmapNormalY+hmapNormalZ*hmapNormalZ);
@@ -167,8 +171,8 @@ var app = (function(){
                 //x*(window.innerWidth-x)+y*(window.innerHeight-y)
                 // N = -dz/dx, -dz/dy,1
                 // N = [2x-width,2y-height,1]
-                var ox = 5*(2*x-window.innerWidth)/window.innerWidth;
-                var oy = 5*(2*y-window.innerHeight)/window.innerHeight;
+                var ox = 5*(2*x-window.innerWidth)*revWidth
+                var oy = 5*(2*y-window.innerHeight)*revHeight
                 var oz = 1;
                 var inv = 1/Math.sqrt(ox*ox+oy*oy+oz*oz);
                 ox*=inv;
@@ -180,8 +184,8 @@ var app = (function(){
                 //x*(window.innerWidth-x)+y*(window.innerHeight-y)
                 // N = -dz/dx, -dz/dy,1
                 // N = [2x-width,2y-height,1]
-                var ox = 5*(-2*x+window.innerWidth)/window.innerWidth;
-                var oy = 5*(-2*y+window.innerHeight)/window.innerHeight;
+                var ox = 5*(-2*x+window.innerWidth)*revWidth;
+                var oy = 5*(-2*y+window.innerHeight)*revHeight;
                 var oz = 1;
                 var inv = 1/Math.sqrt(ox*ox+oy*oy+oz*oz);
                 ox*=inv;
@@ -193,7 +197,7 @@ var app = (function(){
                 //x*(window.innerWidth-x)+y*(window.innerHeight-y)
                 // N = -dz/dx, -dz/dy,1
                 // N = [2x-width,2y-height,1]
-                var ox = 6*(2*x-window.innerWidth)/window.innerWidth;
+                var ox = 6*(2*x-window.innerWidth)*revWidth
                 var oy = 0;
                 var oz = 1;
                 var inv = 1/Math.sqrt(ox*ox+oy*oy+oz*oz);
@@ -205,8 +209,8 @@ var app = (function(){
             {text:"z = x(width-x) + y(y-height)",value:4,f:function(x,y){
                 // N = -dz/dx, -dz/dy,1
                 // N = [2x-width,2y-height,1]
-                var ox = 10*(2*x-window.innerWidth)/window.innerWidth;
-                var oy = 10*(window.innerHeight-2*y)/window.innerHeight;
+                var ox = 10*(2*x-window.innerWidth)*revWidth
+                var oy = 10*(window.innerHeight-2*y)*revHeight;
                 var oz = 1;
                 var inv = 1/Math.sqrt(ox*ox+oy*oy+oz*oz);
                 ox*=inv;
@@ -500,6 +504,11 @@ var app = (function(){
         poly = app.factory.createPolygon();
     }
 
+    function updateReverseDimensions(){
+        revWidth = 1/window.innerWidth;
+        revHeight = 1/window.innerHeight;
+    }
+
     return {
         initialize : initialize,
         pushVertex : pushVertex,
@@ -521,7 +530,8 @@ var app = (function(){
 
         getPolys : function(){
             return objects;
-        }
+        },
+        updateReverseDimensions : updateReverseDimensions
     };
 
 })();

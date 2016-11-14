@@ -3,6 +3,7 @@ app.callbacks = (function(){
     function onResize() {
         app.content.canvas.width = window.innerWidth;
         app.content.canvas.height = window.innerHeight;
+        app.updateReverseDimensions();
     }
 
     function onMouseMove(e){

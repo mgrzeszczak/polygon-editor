@@ -17,7 +17,8 @@ app.objects.polygon = function(){
     this.draw = function(ctx){
         var i,len;
 
-        for (i=0,len=this.edges.length;i<len;i++) this.edges[i].draw(ctx);
+        if (this.fill==false)
+            for (i=0,len=this.edges.length;i<len;i++) this.edges[i].draw(ctx);
 
         if (this.closed==true && this.fill==true)
             app.algorithms.fillPolygon(ctx,this);

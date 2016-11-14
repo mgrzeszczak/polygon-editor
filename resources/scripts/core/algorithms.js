@@ -9,6 +9,7 @@ app.algorithms = (function(){
 
     var normalVectorFunction = function(x,y){return [0,0,1];};
 
+
     var revW = 1/window.innerWidth;
     var revH = 1/window.innerHeight;
 
