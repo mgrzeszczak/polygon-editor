@@ -32,7 +32,11 @@ var app = (function(){
 
         app.lx = window.innerWidth/2;
         app.ly = window.innerHeight/2;
-        app.lz = 10000;
+        app.lz = 5000;
+        app.lightXDir = 1;
+        app.lightZDir = -1;
+
+        drawLoop.lastDate = Date.now();
 
         texture = new Image();
         texture.crossOrigin = "Anonymous";
@@ -113,22 +117,25 @@ var app = (function(){
             for (var j=0;j<height;j++){
                 var tx = i;
                 var ty = j;
-                var sx = hmap[4*(tx<width-1?tx+1:tx)+4*ty*width] - hmap[(tx==0? tx : tx-1)*4 + 4*ty*width];
+
+                var sx = hmap[4*(tx==width-1? tx : tx+1)+4*ty*width]-hmap[4*tx+4*ty*width];
+                var sy = hmap[4*tx+4*(ty==height-1?ty:ty+1)*width]-hmap[4*tx+4*ty*width];
+                /*var sx = hmap[4*(tx<width-1?tx+1:tx)+4*ty*width] - hmap[(tx==0? tx : tx-1)*4 + 4*ty*width];
                 if (tx == 0 || tx == width-1)
                     sx *= 2;
 
                 var sy = hmap[4*tx+4*width*(ty<height-1?ty+1:ty)] - hmap[4*tx+4*width*(ty==0?ty:ty-1)];
                 if (ty == 0 || ty == height -1)
-                    sy *= 2;
+                    sy *= 2;*/
 				
                 var hmapNormalX = sx/255;
                 var hmapNormalY = sy/255;
                 var hmapNormalZ = 2;
 
-                inv = 1/Math.sqrt(hmapNormalX*hmapNormalX+hmapNormalY*hmapNormalY+hmapNormalZ*hmapNormalZ);
+                /*inv = 1/Math.sqrt(hmapNormalX*hmapNormalX+hmapNormalY*hmapNormalY+hmapNormalZ*hmapNormalZ);
                 hmapNormalX*=inv;
                 hmapNormalY*=inv;
-                hmapNormalZ*=inv;
+                hmapNormalZ*=inv;*/
 
 
                 data[3*i+3*j*width] = hmapNormalX;
@@ -155,7 +162,58 @@ var app = (function(){
 
     function chooseNormalVectorFunction(){
         var options = [
-            {text:"x+y",value:0,f:function(x,y){return x+y;}},
+            {text:"z = 0",value:0,f:function(x,y){return [0,0,1];}},
+            {text:"z = x(width-x) + y(height-y)",value:1,f:function(x,y){
+                //x*(window.innerWidth-x)+y*(window.innerHeight-y)
+                // N = -dz/dx, -dz/dy,1
+                // N = [2x-width,2y-height,1]
+                var ox = 5*(2*x-window.innerWidth)/window.innerWidth;
+                var oy = 5*(2*y-window.innerHeight)/window.innerHeight;
+                var oz = 1;
+                var inv = 1/Math.sqrt(ox*ox+oy*oy+oz*oz);
+                ox*=inv;
+                oy*=inv;
+                oz*=inv;
+                return [ox,oy,oz];
+            }},
+            {text:"z = x(x-width) + y(y-height)",value:2,f:function(x,y){
+                //x*(window.innerWidth-x)+y*(window.innerHeight-y)
+                // N = -dz/dx, -dz/dy,1
+                // N = [2x-width,2y-height,1]
+                var ox = 5*(-2*x+window.innerWidth)/window.innerWidth;
+                var oy = 5*(-2*y+window.innerHeight)/window.innerHeight;
+                var oz = 1;
+                var inv = 1/Math.sqrt(ox*ox+oy*oy+oz*oz);
+                ox*=inv;
+                oy*=inv;
+                oz*=inv;
+                return [ox,oy,oz];
+            }},
+            {text:"z = x(width-x)",value:3,f:function(x,y){
+                //x*(window.innerWidth-x)+y*(window.innerHeight-y)
+                // N = -dz/dx, -dz/dy,1
+                // N = [2x-width,2y-height,1]
+                var ox = 6*(2*x-window.innerWidth)/window.innerWidth;
+                var oy = 0;
+                var oz = 1;
+                var inv = 1/Math.sqrt(ox*ox+oy*oy+oz*oz);
+                ox*=inv;
+                oy*=inv;
+                oz*=inv;
+                return [ox,oy,oz];
+            }},
+            {text:"z = x(width-x) + y(y-height)",value:4,f:function(x,y){
+                // N = -dz/dx, -dz/dy,1
+                // N = [2x-width,2y-height,1]
+                var ox = 10*(2*x-window.innerWidth)/window.innerWidth;
+                var oy = 10*(window.innerHeight-2*y)/window.innerHeight;
+                var oz = 1;
+                var inv = 1/Math.sqrt(ox*ox+oy*oy+oz*oz);
+                ox*=inv;
+                oy*=inv;
+                oz*=inv;
+                return [ox,oy,oz];
+            }},
         ];
         app.factory.showDialog('Choose normal vector function:',options,function(value){
             app.algorithms.setNormalVectorFunction(options[~~value].f);
@@ -184,7 +242,24 @@ var app = (function(){
         reader.readAsDataURL(app.content.heightMapChooser.files[0]);
     }
 
+    var lightXSpeed = 0.2;
+
     function drawLoop(){
+
+        var now = Date.now();
+        var diff = now-drawLoop.lastDate;
+        drawLoop.lastDate = now;
+
+
+        app.lx += diff * lightXSpeed * app.lightXDir;
+
+        if (app.lx>window.innerWidth) app.lightXDir = -1;
+        if (app.lx<0) app.lightXDir = 1;
+
+        var centerDist = Math.abs(window.innerWidth/2 - app.lx);
+        app.lz = 500 * 2*(window.innerWidth/2-centerDist)/window.innerWidth;
+
+
         var i,len;
         if (app.config.debug){
             // FPS

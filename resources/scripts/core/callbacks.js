@@ -45,10 +45,10 @@ app.callbacks = (function(){
                 app.ly +=100;
                 break;
             case "Shift":
-                app.lz +=100;
+                app.lz +=1000;
                 break;
             case "Control":
-                app.lz -=100;
+                app.lz -=1000;
                 break;
         }
     }

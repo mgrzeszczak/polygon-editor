@@ -7,7 +7,7 @@ app.algorithms = (function(){
     var rev_255 = 1/255;
     var black = 255<<24;
 
-    var normalVectorFunction = null;
+    var normalVectorFunction = function(x,y){return [0,0,1];};
 
     var revW = 1/window.innerWidth;
     var revH = 1/window.innerHeight;
@@ -34,6 +34,14 @@ app.algorithms = (function(){
         ctx.data[x*app.mwidth+y] = calculateColor(y,x,app.lx,app.ly,app.lz,lc);
     }
 
+    function putPixelBlack(ctx,x,y,c){
+        ctx.data[x+y*app.mwidth] = black;
+    }
+
+    function putPixelRBlack(ctx,x,y,c){
+        ctx.data[x*app.mwidth+y] = black;
+    }
+
     var buf = new ArrayBuffer(Float32Array.BYTES_PER_ELEMENT);
     var fv = new Float32Array(buf);
     var lv = new Uint32Array(buf);
@@ -49,67 +57,88 @@ app.algorithms = (function(){
     }
 
 	var counter  = 0;
+    var dx,dy,dz;
+    var inv;
+    var ox,oy,oz;
+    var nx,ny,hx,hy;
+    var offset;
+    var ttx,ttz,bby,bbz;
+    var ddx,ddy,ddz;
+    var tx,ty,cos;
+
     function calculateColor(x,y,lx,ly,lz,lc){
         // calculate vector to light
-        var dx = lx-x;
-        var dy = ly-y;
-        var dz = lz;
+        dx = lx-x;
+        dy = ly-y;
+        dz = lz;
         // normalize vector to light
 
         // length of vector to light
         //var dl = Math.sqrt(dx*dx+dy*dy+dz*dz);
-        var inv = 1/Math.sqrt(dx*dx+dy*dy+dz*dz);
+        inv = 1/Math.sqrt(dx*dx+dy*dy+dz*dz);
         dx*=inv;
         dy*=inv;
         dz*=inv;
 
+
+
+
         // calculate object's normal vector
-		
 		//x*(window.innerWidth-x)+y*(window.innerHeight-y)
-		
 		// N = -dz/dx, -dz/dy,1
-		
-        var ox = 100*(2*x-window.innerWidth)/window.innerWidth;//50*(2*x-window.innerWidth);//0//((x<window.innerWidth/2?-1:1)*Math.abs(x-window.innerWidth/2));
-        var oy = 100*(2*y-window.innerHeight)/window.innerHeight;//50*(2*y-window.innerHeight);//0//((y<window.innerHeight/2? -1:1)*Math.abs(y-window.innerHeight/2));
-        var oz = 1;//window.innerWidth;
-		
+
+
+        /*var c = 5*revW;
+        var c1 = x<<1;
+        var c2 = -1*window.innerWidth;
+        var c3 = c1+c2;
+
+        ox = c*c3;
+        oy = 0;
+        oz = 1;
+
+        //var ox = 5*(2*x-window.innerWidth)*revW;//50*(2*x-window.innerWidth);//0//((x<window.innerWidth/2?-1:1)*Math.abs(x-window.innerWidth/2));
+        //var oy = 0;//(2*y-window.innerHeight)/window.innerHeight;//50*(2*y-window.innerHeight);//0//((y<window.innerHeight/2? -1:1)*Math.abs(y-window.innerHeight/2));
+        //var oz = 1;//window.innerWidth;
+
+        inv = 1/Math.sqrt(ox*ox+oy*oy+oz*oz);
+        ox*=inv;
+        oy*=inv;
+        oz*=inv;*/
+
+        var objectNormal = normalVectorFunction(x,y);
+        ox = objectNormal[0];
+        oy = objectNormal[1];
+        oz = objectNormal[2];
 		
         // normalize it
 
         
-        var inv = 1/Math.sqrt(ox*ox+oy*oy+oz*oz);
-        ox*=inv;
-        oy*=inv;
-        oz*=inv;
+
         
-		counter++;
-		if (counter%10000000==0){
-			console.log(x+' '+y);
-			console.log(ox+' '+oy+' '+oz);
-			counter = 0;
-		}
 
         // calculate normalized position on the canvas
-        //var nx = x*revW;
-        //var ny = y*revH;
+        nx = x*revW;
+        ny = y*revH;
         // calculate position on the bump map
-        //var hx = Math.floor(nx*app.hMapWidth);
-        //var hy = Math.floor(ny*app.hMapHeight);
-        var hx = Math.floor(x%app.hMapWidth);
-        var hy = Math.floor(y%app.hMapHeight);
+        hx = Math.floor(nx*app.hMapWidth);
+        hy = Math.floor(ny*app.hMapHeight);
+        //var hx = Math.floor(x%app.hMapWidth);
+        //var hy = Math.floor(y%app.hMapHeight);
+
         // get bump map normal vector
         // add bump map's normal vector to object's normal vector and normalize the result
-        var offset = 3*(hx+hy*app.hMapWidth);
+        offset = 3*(hx+hy*app.hMapWidth);
 		
-		var nx = ox;
-		var ny = oy;
+		nx = ox;
+		ny = oy;
 		
         /*ox -= app.hMap[offset];
         oy -= app.hMap[offset+1];
         oz += -nx*app.hMap[offset]-ny*app.hMap[offset+1]//app.hMap[offset+2];*/
 
 		
-	
+        //BUMP MAPPING
 		ttx = 1;
 		ttz = -nx;
 		inv = 1/Math.sqrt(ttx*ttx+ttz*ttz);//invsqrt(ox*ox+oy*oy+oz*oz);
@@ -124,14 +153,9 @@ app.algorithms = (function(){
 		bby*=inv;
 		bbz*=inv;
 	
-		var ddx = -app.hMap[offset]*ttx;
-        var ddy = -app.hMap[offset+1]*bby;
-        var ddz = -ttz*app.hMap[offset]-bbz*app.hMap[offset+1]//app.hMap[offset+2];
-		
-		/*inv = 1/Math.sqrt(ddx*ddx+ddy*ddy+ddz*ddz);//invsqrt(ox*ox+oy*oy+oz*oz);
-        ddx*=inv;
-        ddy*=inv;
-        ddz*=inv*/;
+		ddx = -app.hMap[offset]*ttx;
+        ddy = -app.hMap[offset+1]*bby;
+        ddz = -ttz*app.hMap[offset]-bbz*app.hMap[offset+1];//app.hMap[offset+2];
 		
 		ox+=ddx;
 		oy+=ddy;
@@ -145,14 +169,14 @@ app.algorithms = (function(){
 
         // calculate the cosine between normal vector and vector to the light
         // it is equal to the dot product of the aforementioned vectors
-        var cos = (dx*ox+dy*oy+dz*oz);///(Math.sqrt(ox*ox+oy*oy+oz*oz));
+        cos = (dx*ox+dy*oy+dz*oz);///(Math.sqrt(ox*ox+oy*oy+oz*oz));
         if (cos<0) cos =0 ;
         // calculate the coordinates on the texture
 
         //var tx = x%app.texWidth;
         //var ty = y%app.texHeight;
-        var tx = x%app.texWidth;
-        var ty = y%app.texHeight;
+        tx = x%app.texWidth;
+        ty = y%app.texHeight;
 
 
         // get texture colors
@@ -212,7 +236,13 @@ app.algorithms = (function(){
                 var b = aet[i+1];
                 //fx,fy,tx,ty,ctx,color
 
-                quick_bresenham2(Math.floor(a.xMin),y,Math.floor(b.xMin),y,ctx,black);
+                if (a.xMin>b.xMin) {
+                    var c = a;
+                    a = b;
+                    b = c;
+                }
+                for (var j=Math.floor(a.xMin),max=Math.floor(b.xMin);j<=max;j++) putPixel(ctx,j,y);
+                //quick_bresenham2(Math.floor(a.xMin),y,Math.floor(b.xMin),y,ctx,black);
                 //lines.push([Math.floor(a.xMin),Math.floor(b.xMin),y]);
             }
 
@@ -608,7 +638,7 @@ app.algorithms = (function(){
              dy=-dy;
              sy = -1;
          }
-        var pixel = putPixel;
+        var pixel = putPixelBlack;
 
         if (dx<dy){
             var tmp;
@@ -624,7 +654,7 @@ app.algorithms = (function(){
             tmp = sx;
             sx = sy;
             sy = tmp;
-            pixel = putPixelR;
+            pixel = putPixelRBlack;
         }
         pixel(ctx,fx,fy,color);
         var n = -(dx<<1);
